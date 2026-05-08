@@ -28,10 +28,10 @@
 - [x] Workspace Detection - COMPLETED (2026-05-03T00:00:00Z)
 - [ ] Reverse Engineering - SKIPPED（Greenfield）
 - [x] Requirements Analysis - COMPLETED & APPROVED
-- [x] User Stories - COMPLETED
+- [x] User Stories - COMPLETED & APPROVED
 - [x] Workflow Planning - COMPLETED & APPROVED
 - [ ] User Stories - IN PROGRESS
-- [ ] Application Design - EXECUTE（次のステージ）
+- [x] Application Design - IN PROGRESS（次のステージ）
 - [ ] Units Generation - EXECUTE
 
 ### 🟢 CONSTRUCTION PHASE
