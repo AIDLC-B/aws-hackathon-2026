@@ -385,3 +385,91 @@
 **Context**: INCEPTION - User Stories — US-14詳細化完了
 
 ---
+
+## User Stories - 最終承認
+**Timestamp**: 2026-05-03T00:45:00Z
+**User Input**: "承認します"
+**AI Response**: User Storiesフェーズを承認として記録。aidlc-state.mdを更新。Application Designフェーズへ移行。
+**Context**: INCEPTION - User Stories 完了 → Application Design 開始
+
+---
+
+## Application Design - 開始
+**Timestamp**: 2026-05-03T00:46:00Z
+**User Input**: "承認します"
+**AI Response**: User Stories承認を記録。Application Designフェーズを開始。application-design-plan.md・application-design-questions.md を作成。ユーザーの回答待ち。
+**Context**: INCEPTION - Application Design 開始
+
+---
+
+## Application Design - 質問回答受信・追加質問作成
+**Timestamp**: 2026-05-03T00:47:00Z
+**User Input**: "回答しました"
+**AI Response**: application-design-questions.mdの回答を読み込み。Q5（キャッシュ対象）に曖昧さを検出。application-design-clarification.mdを作成。
+**Context**: INCEPTION - Application Design — 追加質問待ち
+
+---
+
+## Application Design - 成果物生成完了
+**Timestamp**: 2026-05-03T00:48:00Z
+**User Input**: "完了"
+**AI Response**: application-design-clarification.mdの回答を読み込み（Q5: B+補足・頻繁トリガーはキャッシュ10種類以上・特殊トリガーはリアルタイム）。Application Design成果物を生成（components.md・component-methods.md・services.md・component-dependency.md・application-design.md）。ユーザー承認待ち。
+**Context**: INCEPTION - Application Design 成果物生成完了
+
+---
+
+## Application Design - FSDアーキテクチャ採用
+**Timestamp**: 2026-05-03T00:49:00Z
+**User Input**: "Option Aで行きましょう"
+**AI Response**: フロントエンドアーキテクチャをFeature-Sliced Design（FSD）的な構成に確定。components.md・application-design.mdを更新。shared/CharacterBottomSheet・useCharacterLine・api/client・AuthContext・MealContextを共通化。
+**Context**: INCEPTION - Application Design — FSDアーキテクチャ確定
+
+---
+
+## Application Design - 命名規則統一
+**Timestamp**: 2026-05-03T00:50:00Z
+**User Input**: "Q1：A、Q2：A（Meals→ConfirmedMenuItems、CharacterLines→CharacterDialogues、APIはRESTful・リソース名）"
+**AI Response**: 命名規則を確定。全ドキュメントに一括反映（application-design.md・services.md・component-methods.md・component-dependency.md・components.md・stories.md・requirements.md）。命名規則テーブルをapplication-design.mdに追加。
+**Context**: INCEPTION - Application Design — 命名規則統一完了
+
+---
+
+## Application Design - ドメイン間DB結合禁止・テーブル所有原則適用
+**Timestamp**: 2026-05-03T00:51:00Z
+**User Input**: "献立提案ドメインと献立ガチャドメインがDynamoDBの同じテーブルを扱う形になっていますが、ドメイン間は絶対にDB結合は許可しません。それぞれがDBテーブルを持ち、必要に応じてマスター情報を管理するドメインへAPIリクエストすることで情報を取得してください。"
+**AI Response**: ドメイン間DB結合禁止原則を適用。GachaResultsテーブルをガチャドメイン所有として追加。GachaLambdaがConfirmedMenuItemsに直接アクセスする設計を廃止し、MenuSuggestionLambdaのAPIを呼び出す形に変更。services.md・component-methods.md・component-dependency.mdを全面書き直し（文字化け修正含む）。application-design.mdのテーブル構成・システム構成図を更新。
+**Context**: INCEPTION - Application Design — ドメイン間DB結合禁止原則適用完了
+
+---
+
+## Application Design - ガチャ結果保存をTODOに変更
+**Timestamp**: 2026-05-03T00:52:00Z
+**User Input**: "ガチャ結果保存する処理は今のところないので、今後作る際に追加するようにしましょう。"
+**AI Response**: GachaResultsテーブルとガチャ結果保存処理をTODO（将来追加）として明記。application-design.md・services.md・component-methods.md・component-dependency.mdを更新。
+**Context**: INCEPTION - Application Design — ガチャ結果保存をTODOに変更
+
+---
+
+## Application Design - ガチャフロー設計確定
+**Timestamp**: 2026-05-03T00:53:00Z
+**User Input**: "ガチャ確定はフロントエンドのユーザ側の選択により決定します。その後フロントエンドからBE-02へ確定したことをリクエストする形です。よって、ガチャ確定時に、献立ガチャドメインは、無関係です。なお、ガチャ実行時には、BE-02を呼び出し確定済みの献立は除外します。"
+**AI Response**: ガチャフローを修正。ガチャ実行時はBE-03がBE-02を呼び出して確定済み献立を除外。ガチャ確定時はフロントエンドがBE-02を直接呼び出し（BE-03は無関係）。component-dependency.md・component-methods.md・services.md・requirements.mdを更新。
+**Context**: INCEPTION - Application Design — ガチャフロー設計確定
+
+---
+
+## Application Design - components.md文字化け修正
+**Timestamp**: 2026-05-03T00:54:00Z
+**User Input**: "components.mdの文字化けを修正してください。"
+**AI Response**: components.mdを全面書き直し。文字化け修正・ガチャ確定フロー（フロントエンドがBE-02を直接呼び出す）・useCharacterLine→useCharacterDialogueへの命名修正・各バックエンドコンポーネントに所有テーブルを明記。
+**Context**: INCEPTION - Application Design — components.md修正完了
+
+---
+
+## Application Design - 整合性確認・修正
+**Timestamp**: 2026-05-03T00:55:00Z
+**User Input**: "application-design配下のファイルの整合性を確認して。"
+**AI Response**: 全5ファイルを確認。3点の不整合を検出・修正。(1)システム構成図のBE-03接続先を修正（確定済み献立登録→確定済み献立除外、ガチャ確定はFEがBE-02直接呼び出しと明記）(2)バックエンド一覧のBE-03責務を修正(3)FSD構成のgacha/apiにconfirmedMenuItemApiを追記。
+**Context**: INCEPTION - Application Design — 整合性確認・修正完了
+
+---
