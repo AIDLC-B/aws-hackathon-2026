@@ -8,10 +8,10 @@
 | フロントエンド状態管理 | React Context + useReducer |
 | DB設計 | ドメインごとにテーブル分割（Users/Recipes/ConfirmedMenuItems/CharacterDialogues） |
 | 画像アップロード | フロントエンド → Lambda → S3 → Bedrock（同期型） |
-| キャラクター一言 | ハイブリッド（頻繁トリガー=キャッシュ、特殊トリガー=リアルタイム） |
+| キャラクター一言 | ハイブリッド（頻繁トリガー=DynamoDBマスター参照、特殊トリガー=リアルタイム）。マスターデータはBedrockで手動生成 |
 | 認証トークン管理 | Amplify Auth（Cognitoベストプラクティス） |
-| ガチャ抽選 | フロントエンドで実行（N:60%/R:25%/SR:12%/SSR:3%） |
-| リセマラカウント | フロントエンドのメモリ（セッション内） |
+| ガチャ抽選 | BE-03（GachaLambda）で実行（N:60%/R:25%/SR:12%/SSR:3%） |
+| リセマラカウント | フロントエンドのメモリ（セッション内）※抽選ロジック自体はBE-03 |
 
 ---
 
@@ -36,6 +36,8 @@
     +--[Amplify Auth]---> [Amazon Cognito]
     |                           |
     |                     [BE-05: AuthLambda]
+    |                           |---> Cognitoトリガー: ユーザー初期化
+    |                           |---> GET /users/me: プロファイル取得
     |                           |
     |                     [DynamoDB: Users]
     |
@@ -54,7 +56,7 @@
     |                                                       ※ガチャ確定時はフロントエンドがBE-02を直接呼び出す
     |
     +---> [API Gateway: /character-dialogues]    ---> [BE-04: CharacterLambda]
-                                                            |---> [DynamoDB: CharacterDialogues（キャッシュ）]
+                                                            |---> [DynamoDB: CharacterDialogues（マスター）]
                                                             |---> [Bedrock: リアルタイム生成]
 ```
 
@@ -62,48 +64,73 @@
 
 ## フロントエンドアーキテクチャ
 
-**採用パターン**: Feature-Sliced Design（FSD）的な構成
+**採用パターン**: Feature-Sliced Design（FSD）的な構成 + 4階層コンポーネントモデル
+
+### コンポーネント階層
+
+| 階層 | 役割 | 粒度 |
+|---|---|---|
+| **Page** | ルート単位の画面 | 1画面 |
+| **Widget** | 画面内の意味的ブロック | 複数要素の塊 |
+| **Feature Component** | 特定機能の再利用可能単位・ロジックを持つ | 1機能 |
+| **UI Element** | 汎用パーツ・ロジックを持たない | 最小 |
+
+詳細は `components.md` の「コンポーネント設計指針」を参照。
+
+### ディレクトリ構造
 
 ```
 src/
   features/
     auth/                          ← 認証機能一式
+      pages/                       ← LoginPage, SignupPage, ConfirmCodePage
       components/                  ← LoginForm, SignupForm, ConfirmCodeForm
       hooks/                       ← useAuth
       api/                         ← authApi（Amplify Auth呼び出し）
     onboarding/                    ← 初回オンボーディング
+      pages/                       ← OnboardingPage
+      widgets/                     ← OnboardingHeader, OnboardingFooter
       components/                  ← OnboardingList, RecipeCheckItem
       hooks/                       ← useOnboarding
       api/                         ← onboardingApi
     home/                          ← トップ画面分岐
+      pages/                       ← HomePage
       components/                  ← HomeRouter
       hooks/                       ← useHomeState
     suggestion/                    ← 献立提案フロー
-      components/                  ← SelectionScreen, FilteringScreen, SuggestionCards
+      pages/                       ← SelectionPage, FilteringPage, SuggestionResultPage
+      widgets/                     ← CharacterSection, SuggestionCardList
+      components/                  ← MoodSelector, DurationSelector, DifficultySelector, SuggestionCard
       hooks/                       ← useSuggestion, useFiltering
       api/                         ← menuSuggestionApi
     gacha/                         ← ガチャ
-      components/                  ← GachaScreen, GachaResult, DeliveryRoute
+      pages/                       ← GachaPage, GachaResultPage, DeliveryRoutePage
+      widgets/                     ← GachaCapsuleSection, GachaResultList
+      components/                  ← GachaCapsule, GachaResultCard, GachaConfirmDialog
       hooks/                       ← useGacha, useRerollCount
-      api/                         ← gachaApi（GachaLambda呼び出し）
+      api/                         ← gachaApi（POST /gacha, count指定）
                                       confirmedMenuItemApi（ガチャ確定時にBE-02を直接呼び出し）
     recipe/                        ← 料理管理
-      components/                  ← RecipeForm, RecipeList, RecipeDetail, RecipeEditForm
+      pages/                       ← RecipeRegistrationPage, RecipeListPage, RecipeDetailPage, RecipeEditPage
+      widgets/                     ← RecipeListHeader, RecipeDetailHeader
+      components/                  ← RecipeForm, RecipeEditForm, RecipeListItem, RecipeDetailView, PhotoUploadField
       hooks/                       ← useRecipe
       api/                         ← recipeApi
     confirmedMenuItem/             ← 確定済み献立管理
-      components/                  ← ConfirmedMenuItemList, ConfirmedMenuItemDetail
+      pages/                       ← ConfirmedMenuItemListPage, ConfirmedMenuItemDetailPage
+      components/                  ← ConfirmedMenuItemList, ConfirmedMenuItemListItem, CompleteButton
       hooks/                       ← useConfirmedMenuItem
       api/                         ← confirmedMenuItemApi
     settings/                      ← 設定
-      components/                  ← SettingsScreen, CharacterSelector
+      pages/                       ← SettingsPage, CharacterSelectorPage
+      widgets/                     ← ProfileHeader, PremiumSection
+      components/                  ← CharacterSelector, LogoutButton
       hooks/                       ← useSettings
   shared/
     components/
-      CharacterBottomSheet/        ← 全画面共通ボトムシート（4箇所で使用）
+      CharacterBottomSheet/        ← 全画面共通ボトムシート（5箇所で使用）
       BottomNavigation/            ← タブバー
-      LoadingSpinner/
-      ConfirmDialog/
+      ui/                          ← UI Element群（Button, Input, Select, LoadingSpinner, ConfirmDialog 等）
     hooks/
       useCharacterDialogue/        ← キャラクター台詞取得（全featureで使用）
     api/
@@ -115,12 +142,26 @@ src/
     constants/                     ← 定数（レアリティ確率、オンボーディングリスト等）
 ```
 
+### Container / Presentational の分離
+
+すべての Feature Component で分離する（テスタビリティ重視）：
+
+```
+features/recipe/components/RecipeForm/
+├── RecipeForm.tsx              ← Container（Hook を呼び、ロジックを持つ）
+├── RecipeFormView.tsx          ← Presentational（propsだけ受け取り描画）
+├── RecipeForm.types.ts         ← 型定義
+└── index.ts                    ← 公開インターフェース
+```
+
 **設計方針**:
 - 各featureは独立して動作し、他featureに直接依存しない
 - feature間の共有ロジック・UIは`shared/`に集約
-- `CharacterBottomSheet`は`shared/components/`で共通化（suggestion/gacha/recipe/confirmedMenuItemの4箇所で使用）
+- `CharacterBottomSheet`は`shared/components/`で共通化（suggestion/gacha/recipe/confirmedMenuItem/onboardingの5箇所で使用）
 - APIクライアントは`shared/api/client/`で共通化（認証ヘッダー付与・エラーハンドリング・リトライ）
 - 重複コードは`shared/`で吸収し、feature内の重複は許容
+- **上位→下位の単方向依存**: Page は Widget / Feature Component / UI Element を import するが逆は禁止
+- **ビジネスロジックは Hook に隔離**: UI コンポーネントは presentation のみ担当
 
 ---
 
@@ -130,9 +171,9 @@ src/
 |---|---|---|---|
 | BE-01 | RecipeManagementLambda | /recipes | 料理CRUD・検索API提供 |
 | BE-02 | MenuSuggestionLambda | /menu-suggestions, /confirmed-menu-items | 献立提案・確定済み献立管理 |
-| BE-03 | GachaLambda | /gacha | ガチャ実行（確定はフロントエンドがBE-02を直接呼び出す） |
-| BE-04 | CharacterLambda | /character-dialogues | 台詞生成（キャッシュ/リアルタイム） |
-| BE-05 | AuthLambda | Cognitoトリガー | ユーザー初期化 |
+| BE-03 | GachaLambda | /gacha | ガチャ実行（確定はフロントエンドがBE-02を直接呼び出す）。count入力で件数指定 |
+| BE-04 | CharacterLambda | /character-dialogues | 台詞生成（マスター参照/リアルタイム） |
+| BE-05 | AuthLambda | Cognitoトリガー, /users/me | ユーザー初期化・プロファイル取得 |
 
 ---
 
@@ -146,7 +187,7 @@ src/
 | Recipes | 料理管理 | userId | recipeId | name, difficulty, duration, rarity, imageUrl, ingredients, steps, memo |
 | ConfirmedMenuItems | 献立提案 | userId | confirmedMenuItemId | recipeId, confirmedAt |
 | GachaResults | ガチャ | userId | gachaResultId | recipeId, rarity, spunAt | ※TODO: 将来追加 |
-| CharacterDialogues | キャラクター | characterId | dialogueId | tone, trigger, line, isCache |
+| CharacterDialogues | キャラクター（マスター） | characterId | dialogueId | tone, trigger, line |
 
 ---
 
@@ -156,14 +197,52 @@ src/
 
 | パラメータ | 内容 |
 |---|---|
-| trigger | イベント種別（meal_decided / meal_completed / recipe_registered / gacha_reroll_limit） |
-| from | 画面遷移元（suggestion / gacha / gacha_10 / detail / list / registration） |
-| isPremium | プレミアムフラグ（推しキャラ絞り込みに使用） |
+| trigger | イベント種別（meal_decided / gacha_decided / recipe_registered / gacha_reroll_limit / meal_suggested / meal_completed） |
+| from | 画面遷移元（suggestion / gacha / gacha_10 / detail / list / registration / onboarding） |
+| isPremium | プレミアムフラグ（推しキャラ絞り込みに使用）※DynamoDB Usersテーブルから取得・Cognitoには保持しない |
 
 キャラクタードメイン内部で決定するもの（呼び出し元から渡さない）：
 - キャラクターID
 - トーン
 - 台詞
+
+### trigger × トーン × キャラクター 組み合わせ定義
+
+| trigger | トーン | 対応キャラクター | 表示方式 |
+|---|---|---|---|
+| `meal_decided` | 褒める | サボ母ちゃん、サボわらし | ボトムシート |
+| `meal_decided` | 共感・脱力 | ニャマケ、サボット | ボトムシート |
+| `gacha_decided` | 褒める | サボ母ちゃん、サボわらし | ボトムシート |
+| `gacha_decided` | 叱咤激励 | サボエル、サボ母ちゃん | ボトムシート |
+| `recipe_registered` | 褒める | サボ母ちゃん、サボわらし、サボエル、サボット | ボトムシート（from: registration=個別登録 / onboarding=一括登録完了時に1回） |
+| `gacha_reroll_limit` | 誘惑・煽り | メシストフェレス（固定） | 専用画面（堕落ルート） |
+| `meal_suggested` | 共感・脱力 | ニャマケ、サボット | インライン（フィルタリング画面内） |
+| `meal_suggested` | 叱咤激励 | サボエル、サボ母ちゃん | インライン（フィルタリング画面内） |
+| `meal_suggested` | 叱責 | シェフレイ、メシストフェレス | インライン（フィルタリング画面内） |
+| `meal_completed` | 褒める | サボ母ちゃん、サボわらし、ニャマケ、サボエル | ボトムシート |
+
+### キャラクター × トーン 全体マッピング
+
+| キャラクター | 叱咤激励 | 叱責 | 褒める | 共感・脱力 | 誘惑・煽り |
+|---|---|---|---|---|---|
+| サボエル | ✅ | — | ✅ | — | — |
+| サボ母ちゃん | ✅ | — | ✅ | — | — |
+| ニャマケ | — | — | ✅ | ✅ | — |
+| シェフレイ | — | ✅ | — | — | — |
+| メシストフェレス | — | ✅ | — | — | ✅ |
+| サボット | — | — | ✅ | ✅ | — |
+| サボわらし | — | — | ✅ | — | — |
+
+### 表示方式まとめ
+
+| trigger | 表示方式 | 理由 |
+|---|---|---|
+| `meal_decided` | ボトムシート | 確定アクション後の演出 |
+| `gacha_decided` | ボトムシート | 確定アクション後の演出 |
+| `recipe_registered` | ボトムシート | 登録完了後の演出 |
+| `gacha_reroll_limit` | 専用画面（堕落ルート画面） | デリバリーリンク表示が必要 |
+| `meal_suggested` | インライン（フィルタリング画面内） | 画面遷移を伴わない・質問文言として表示 |
+| `meal_completed` | ボトムシート | 「つくったよ！」後の演出 |
 
 ---
 

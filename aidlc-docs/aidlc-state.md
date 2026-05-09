@@ -4,8 +4,8 @@
 - **Project Name**: DAMESI（ダメシ）
 - **Project Type**: Greenfield
 - **Start Date**: 2026-05-03T00:00:00Z
-- **Last Updated**: 2026-05-03T00:11:00Z
-- **Current Stage**: INCEPTION - Application Design
+- **Last Updated**: 2026-05-09T01:40:00Z
+- **Current Stage**: CONSTRUCTION PHASE - Functional Design（Per-Unit Loop）
 
 ## Workspace State
 - **Existing Code**: No
@@ -30,12 +30,11 @@
 - [x] Requirements Analysis - COMPLETED & APPROVED
 - [x] User Stories - COMPLETED & APPROVED
 - [x] Workflow Planning - COMPLETED & APPROVED
-- [ ] User Stories - IN PROGRESS
-- [x] Application Design - IN PROGRESS（次のステージ）
-- [ ] Units Generation - EXECUTE
+- [x] Application Design - COMPLETED & APPROVED (2026-05-09T01:15:00Z)
+- [x] Units Generation - COMPLETED & APPROVED (2026-05-09T01:40:00Z)
 
 ### 🟢 CONSTRUCTION PHASE
-- [ ] Functional Design - EXECUTE
+- [ ] Functional Design - EXECUTE（次のステージ）
 - [ ] NFR Requirements - EXECUTE
 - [ ] NFR Design - EXECUTE
 - [ ] Infrastructure Design - EXECUTE
@@ -46,6 +45,6 @@
 - [ ] Operations - PLACEHOLDER
 
 ## 次回セッションの再開ポイント
-- **再開アクション**: Workflow Planning の実行計画をユーザーに提示し、承認を得てから **User Stories** へ進む
-- **参照ファイル**: `aidlc-docs/inception/plans/execution-plan.md`
-- **承認待ちメッセージ**: execution-plan.md の内容を確認・承認 → Application Design へ
+- **再開アクション**: CONSTRUCTION PHASE の Per-Unit Loop を開始（Unit 0: 認証基盤 から）
+- **参照ファイル**: `aidlc-docs/inception/application-design/unit-of-work.md`
+- **実装順序**: Unit 0（認証）→ Unit 1（料理管理）→ Unit 2（献立提案）→ Unit 3（ガチャ）→ Unit 4（AIキャラクター）→ Unit 5（フロントエンド）

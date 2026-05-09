@@ -34,8 +34,8 @@
 
 ### ガチャ → 料理管理・献立提案（ガチャ実行時）
 - GachaLambdaはBE-02（MenuSuggestionLambda）のAPIを呼び出して確定済み献立のrecipeIdを取得
-- 確定済み献立を除外した上で、BE-01（RecipeManagementLambda）のAPIを呼び出してレシピリストを取得
-- SR以上確定保証ロジックを適用してフロントエンドに返却
+- 確定済み献立を除外した上で、BE-01（RecipeManagementLambda）の`getRecipeIds`を呼び出してレシピIDリストを取得（軽量API・大量レシピ対応）
+- BE-03内でレアリティ抽選（排出率は環境変数で管理: デフォルト N:60%/R:25%/SR:12%/SSR:3%）を実施し、抽選済みの結果（recipe + rarity）をフロントエンドに返却
 
 ### ガチャ確定（フロントエンドが担当）
 - ユーザーがガチャ結果から献立を選択・確定する処理はフロントエンドで行う
@@ -44,7 +44,8 @@
 
 ### フロントエンド → キャラクター
 - trigger/fromのみ渡す（キャラクター・トーンは内部決定）
-- isPremiumフラグはCognitoトークンから取得してリクエストに含める
+- isPremiumフラグはDynamoDB（Usersテーブル）から取得し、AuthContext経由でリクエストに含める
+- isPremiumフラグはCognitoには保持しない
 
 ---
 
@@ -56,7 +57,7 @@
 | Recipes | 料理管理 | userId | recipeId | name, difficulty, duration, rarity, imageUrl, ingredients, steps, memo |
 | ConfirmedMenuItems | 献立提案 | userId | confirmedMenuItemId | recipeId, confirmedAt |
 | GachaResults | ガチャ | userId | gachaResultId | recipeId, rarity, spunAt | ※TODO: 将来追加 |
-| CharacterDialogues | キャラクター | characterId | dialogueId | tone, trigger, line, isCache |
+| CharacterDialogues | キャラクター（マスター） | characterId | dialogueId | tone, trigger, line |
 
 **設計方針**:
 - 全リクエストにuserIdを含める（Cognitoトークンから検証）
@@ -79,23 +80,30 @@
     +---> ログイン → Cognito → JWTトークン取得
     |         |
     |         +---> Amplify Authがlocalに管理
+    |         +---> BE-05: getUserProfile呼び出し → AuthContextにセット
+    |               （userId, nickname, isPremium, isOnboarded）
     |
     +---> 各APIリクエスト → Authorizationヘッダーにトークン付与
               |
               +---> API Gateway → Cognito Authorizer → Lambda
 ```
 
+**認証セッション方針**:
+- Cognitoの認証期間は1か月に設定
+- ログイン成功後にBE-05のgetUserProfileを呼び出してAuthContextにセット
+- 1か月ごとの再認証時にisPremiumフラグが最新化される
+
 ---
 
-## キャラクター台詞キャッシュ戦略
+## キャラクター台詞マスターテーブル戦略
 
 ```
-【キャッシュ対象（頻繁トリガー）】
-trigger: meal_decided / meal_completed / recipe_registered
+【マスター参照（頻繁トリガー）】
+trigger: meal_decided / gacha_decided / recipe_registered / meal_suggested / meal_completed
 
   CharacterLambda
       |
-      +---> DynamoDB: CharacterDialoguesテーブルを検索
+      +---> DynamoDB: CharacterDialoguesマスターテーブルを検索
       |     （characterId × tone × trigger でフィルタ）
       +---> ランダムで1件返却（10種類以上から選択）
 
@@ -107,3 +115,9 @@ trigger: gacha_reroll_limit
       +---> Bedrock呼び出し（メシストフェレス固定）
       +---> 生成されたセリフを返却
 ```
+
+**マスターデータ管理方針**:
+- CharacterDialoguesテーブルはユーザーデータではなくマスターデータ（全ユーザー共通）
+- マスターデータはBedrockを使って手動生成し、事前にテーブルへ投入する
+- アプリ実行時にBedrockを呼び出してキャッシュを生成する処理は存在しない
+- `meal_suggested` のセリフはフィルタリング画面のキャラクター質問文言として使用（インライン表示）

@@ -340,7 +340,10 @@
 - **表示形式**: 画面下部からスライドアップ（ボトムシート）
 - **内容**: キャラクター画像 + キャラクター名 + 一言セリフ
 - **閉じ方**: 「閉じる」ボタン または 5秒後に自動クローズ
-- **発火タイミング**:
-  - 献立確定時（提案・ガチャ問わず）: trigger=meal_decided
-  - 「つくったよ！」押下時: trigger=meal_completed
-  - 料理登録完了時: trigger=recipe_registered
+- **発火タイミングと表示方式**:
+  - 献立確定時（提案から）: trigger=meal_decided → ボトムシート
+  - 献立確定時（ガチャから）: trigger=gacha_decided → ボトムシート
+  - 「つくったよ！」押下時: trigger=meal_completed → ボトムシート
+  - 料理登録完了時: trigger=recipe_registered → ボトムシート
+  - フィルタリング画面表示時: trigger=meal_suggested → インライン表示（ボトムシートではない）
+  - ガチャリセマラ5回目: trigger=gacha_reroll_limit → 専用画面（堕落ルート）
