@@ -10,6 +10,7 @@
 |---|---|---|---|---|
 | registerRecipe | POST | /recipes | userId, imageBase64?, recipeName?, difficulty, duration, rarity | recipe |
 | getRecipes | GET | /recipes | userId, difficulty?, duration?, rarity?, limit? | recipe[] |
+| getRecipeIds | GET | /recipes/ids | userId, difficulty?, duration?, rarity? | recipeId[] |
 | getRecipeCount | GET | /recipes/count | userId | count |
 | updateRecipe | PUT | /recipes/{recipeId} | userId, recipeName?, difficulty?, duration?, rarity?, ingredients?, steps?, memo? | recipe |
 | deleteRecipe | DELETE | /recipes/{recipeId} | userId | success |
@@ -33,15 +34,18 @@
 
 | メソッド | HTTPメソッド | パス | 入力 | 出力 |
 |---|---|---|---|---|
-| spinGacha | POST | /gacha/single | userId | recipe[], rarityMap |
-| spinGacha10 | POST | /gacha/ten | userId | recipe[10], rarityList |
+| spinGacha | POST | /gacha | userId, count | { recipe, rarity }[] |
 
 **所有テーブル**: GachaResults（※TODO: 将来追加。現時点では未実装）
 
+**入力パラメータ**:
+- `count`: ガチャ回数（1=シングル、10=10連）。Lambda側で最大数バリデーションを実施
+
 **ドメイン間通信（ガチャ実行時のみ）**:
-- BE-02（MenuSuggestionLambda）を呼び出して確定済み献立のrecipeIdを取得し、除外対象として使用
-- BE-01（RecipeManagementLambda）を呼び出してレシピリストを取得
-- 確定済み献立を除外したレシピリストをフロントエンドに返却
+- BE-02（MenuSuggestionLambda）の`getConfirmedMenuItems`を呼び出して確定済み献立を取得し、BE-03側でrecipeIdを抽出して除外対象として使用
+- BE-01（RecipeManagementLambda）の`getRecipeIds`を呼び出してレシピIDリストを取得（軽量API・大量レシピ対応）
+- BE-03内でレアリティ抽選（排出率は環境変数で管理: デフォルト N:60%/R:25%/SR:12%/SSR:3%）を実施
+- 抽選済みの結果（recipe + rarity）をフロントエンドに返却
 
 **ガチャ確定はフロントエンドが担当**:
 - ユーザーがガチャ結果から献立を選択・確定する処理はフロントエンドで行う
@@ -58,9 +62,9 @@
 
 **所有テーブル**: CharacterDialogues
 
-**キャッシュ戦略**:
-- キャッシュ対象トリガー: `meal_decided`, `meal_completed`, `recipe_registered`
-  - キャラクター×トーンごとに10種類以上のセリフをCharacterDialoguesテーブルに事前格納
+**マスターテーブル参照戦略**:
+- マスター参照対象トリガー: `meal_decided`, `gacha_decided`, `recipe_registered`, `meal_suggested`, `meal_completed`
+  - キャラクター×トーン×トリガーごとに10種類以上のセリフをCharacterDialoguesマスターテーブルに事前格納（Bedrockで手動生成）
   - ランダムで1件返却
 - リアルタイム対象トリガー: `gacha_reroll_limit`（メシストフェレス固定・Bedrock生成）
 
@@ -68,8 +72,14 @@
 
 ## BE-05: AuthLambda
 
-| メソッド | トリガー | 処理 |
-|---|---|---|
-| postConfirmation | Cognito Post Confirmation | DynamoDBにユーザープロファイル初期化（userId, nickname, isPremium: false） |
+| メソッド | トリガー/HTTPメソッド | パス/処理 | 入力 | 出力 |
+|---|---|---|---|---|
+| postConfirmation | Cognito Post Confirmation | — | — | DynamoDBにユーザープロファイル初期化（userId, nickname, isPremium: false） |
+| getUserProfile | GET | /users/me | userId（Cognitoトークンから取得） | { userId, nickname, isPremium, isOnboarded } |
 
 **所有テーブル**: Users
+
+**認証セッション方針**:
+- Cognitoの認証期間は1か月に設定
+- ログイン時にgetUserProfileを呼び出してAuthContextにセット
+- 1か月ごとの再認証時にisPremiumフラグが最新化される
