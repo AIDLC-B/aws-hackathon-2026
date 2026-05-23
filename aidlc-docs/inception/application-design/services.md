@@ -1,123 +1,175 @@
-# サービス層定義
+# サービス層設計
 
 ## アーキテクチャ概要
 
-ドメインごとに独立したAPI Gateway + Lambdaを持つ構成。
-フロントエンドが結合レイヤーとして各ドメインAPIを直接呼び出す。
-
-**原則**: ドメイン間のDB直接アクセスは禁止。他ドメインのデータが必要な場合はAPIリクエストで取得する。
-
 ```
-[React Frontend]
-    |
-    +---> [API Gateway: /recipes]              --> [BE-01: RecipeManagementLambda]
-    |
-    +---> [API Gateway: /menu-suggestions      --> [BE-02: MenuSuggestionLambda]
-    |              /confirmed-menu-items]
-    |
-    +---> [API Gateway: /gacha]                --> [BE-03: GachaLambda]
-    |
-    +---> [API Gateway: /character-dialogues]  --> [BE-04: CharacterLambda]
-    |
-    +---> [Cognito]                            --> [BE-05: AuthLambda（Trigger）]
++------------------+     +-------------------+     +------------------+
+|  React Frontend  | --> | Cloud Functions   | --> | Claude API       |
+|  (Firebase SDK)  |     | (CF-01/02/03)     |     | (Anthropic)      |
++------------------+     +-------------------+     +------------------+
+        |                         |
+        v                         v
++------------------+     +-------------------+
+|  Firestore       |     | Cloud Storage     |
+|  (直接アクセス)   |     | (料理写真)        |
++------------------+     +-------------------+
+        |
+        v
++------------------+
+| Firebase Auth    |
+| (認証・認可)      |
++------------------+
 ```
 
 ---
 
-## サービス間通信
+## ドメイン間通信パターン
 
-### 献立提案 → 料理管理
-- MenuSuggestionLambdaはRecipeManagementLambdaのAPIを内部呼び出し
-- フィルタリング条件（mood/duration/difficulty）を渡してレシピリストを取得
-- 確定済み献立のrecipeIdを除外してから3品選択
-- 確定済み献立はConfirmedMenuItemsテーブル（献立提案ドメイン所有）に保存
+### パターン1: フロントエンド → Firestore 直接操作
+- **対象**: レシピCRUD、確定済み献立CRUD、ユーザープロフィール、設定
+- **認可**: Firestore Security Rules で制御
+- **特徴**: Cloud Functionsを経由しないため、呼び出し回数を消費しない
 
-### ガチャ → 料理管理・献立提案（ガチャ実行時）
-- GachaLambdaはBE-02（MenuSuggestionLambda）のAPIを呼び出して確定済み献立のrecipeIdを取得
-- 確定済み献立を除外した上で、BE-01（RecipeManagementLambda）の`getRecipeIds`を呼び出してレシピIDリストを取得（軽量API・大量レシピ対応）
-- BE-03内でレアリティ抽選（排出率は環境変数で管理: デフォルト N:60%/R:25%/SR:12%/SSR:3%）を実施し、抽選済みの結果（recipe + rarity）をフロントエンドに返却
+### パターン2: フロントエンド → Cloud Functions → Firestore
+- **対象**: 献立提案（CF-02）、ガチャ抽選（CF-03）
+- **理由**: ビジネスロジック（フィルタリング・確率計算）をサーバーサイドで実行
+- **認可**: Callable Functions は Firebase Auth トークンを自動検証
 
-### ガチャ確定（フロントエンドが担当）
-- ユーザーがガチャ結果から献立を選択・確定する処理はフロントエンドで行う
-- 確定後はフロントエンドがBE-02（MenuSuggestionLambda）の`/confirmed-menu-items`を直接呼び出す
-- ガチャ確定時にBE-03（GachaLambda）は関与しない
-
-### フロントエンド → キャラクター
-- trigger/fromのみ渡す（キャラクター・トーンは内部決定）
-- isPremiumフラグはDynamoDB（Usersテーブル）から取得し、AuthContext経由でリクエストに含める
-- isPremiumフラグはCognitoには保持しない
+### パターン3: フロントエンド → Cloud Functions → 外部API
+- **対象**: 料理写真認識（CF-01 → Claude API）
+- **理由**: APIキーの保護
+- **認可**: Callable Functions + Secret Manager
 
 ---
 
-## DynamoDBテーブル構成（ドメイン所有原則）
+## Firestoreデータフロー
 
-| テーブル | 所有ドメイン | PK | SK | 主な属性 |
-|---|---|---|---|---|
-| Users | 認証 | userId | — | nickname, isPremium, isOnboarded |
-| Recipes | 料理管理 | userId | recipeId | name, difficulty, duration, rarity, imageUrl, ingredients, steps, memo |
-| ConfirmedMenuItems | 献立提案 | userId | confirmedMenuItemId | recipeId, confirmedAt |
-| GachaResults | ガチャ | userId | gachaResultId | recipeId, rarity, spunAt | ※TODO: 将来追加 |
-| CharacterDialogues | キャラクター（マスター） | characterId | dialogueId | tone, trigger, line |
+### 料理登録フロー
+```
+1. ユーザーが写真を撮影/選択
+2. Cloud Storage に画像アップロード（フロントエンドから直接）
+3. CF-01 (analyzeRecipeImage) を呼び出し → Claude API で認識
+4. 認識結果をフロントエンドに返却
+5. ユーザーが確認・修正
+6. フロントエンドから Firestore に直接書き込み
+   → users/{uid}/recipes/{recipeId}
+```
 
-**設計方針**:
-- 全リクエストにuserIdを含める（Cognitoトークンから検証）
-- 各ドメインは自分が所有するテーブルのみアクセス可能
-- 他ドメインのデータが必要な場合は必ずAPIリクエストで取得
+### 献立提案フロー
+```
+1. ユーザーがフィルタリング条件を選択
+2. CF-02 (suggestMeals) を呼び出し
+3. CF-02 内部:
+   a. users/{uid}/recipes を取得
+   b. users/{uid}/confirmedMenuItems を取得（除外用）
+   c. フィルタリング実行
+   d. ランダム3品選択
+4. 結果をフロントエンドに返却
+5. ユーザーが「これにする！」で確定
+6. フロントエンドから Firestore に直接書き込み
+   → users/{uid}/confirmedMenuItems/{itemId}
+```
+
+### ガチャフロー
+```
+1. ユーザーが「ガチャを回す！」を押す
+2. CF-03 (spinGacha) を呼び出し（count: 1 or 10）
+3. CF-03 内部:
+   a. users/{uid}/recipes を取得
+   b. users/{uid}/confirmedMenuItems を取得（除外用）
+   c. gachaConfig から確率設定を取得
+   d. レアリティ抽選実行
+   e. 該当レアリティのレシピからランダム選択
+4. 結果をフロントエンドに返却
+5. ガチャ演出を再生
+6. ユーザーが「これにする！」で確定
+7. フロントエンドから Firestore に直接書き込み
+   → users/{uid}/confirmedMenuItems/{itemId}（1件 or 10件）
+```
+
+### キャラクター台詞取得フロー
+```
+1. trigger発火（献立確定・料理登録・つくったよ等）
+2. useCharacterDialogue フック内:
+   a. characterDialogues コレクションから該当trigger・toneの台詞を取得
+   b. isPremium=false の台詞のみ（プレミアムユーザーは全台詞対象）
+   c. favoriteCharacters が設定されている場合はそのキャラクターのみ
+   d. ランダムで1件選択
+3. ボトムシート or インラインで表示
+```
 
 ---
 
-## 認証フロー
+## Cloud Functions 呼び出しフロー
 
+### 認証フロー
 ```
-[Frontend: Amplify Auth]
-    |
-    +---> サインアップ → Cognito User Pool
-    |         |
-    |         +---> メール確認コード送信
-    |         +---> 確認後 → Post Confirmation Trigger
-    |                           → BE-05: DynamoDBにユーザー初期化
-    |
-    +---> ログイン → Cognito → JWTトークン取得
-    |         |
-    |         +---> Amplify Authがlocalに管理
-    |         +---> BE-05: getUserProfile呼び出し → AuthContextにセット
-    |               （userId, nickname, isPremium, isOnboarded）
-    |
-    +---> 各APIリクエスト → Authorizationヘッダーにトークン付与
-              |
-              +---> API Gateway → Cognito Authorizer → Lambda
+フロントエンド                    Cloud Functions
+    |                                |
+    |-- httpsCallable("CF名") ----->|
+    |   (Firebase Auth Token 自動付与) |
+    |                                |-- request.auth.uid で認証確認
+    |                                |-- Firestore操作（Admin SDK）
+    |                                |
+    |<-- レスポンス ------------------|
 ```
 
-**認証セッション方針**:
-- Cognitoの認証期間は1か月に設定
-- ログイン成功後にBE-05のgetUserProfileを呼び出してAuthContextにセット
-- 1か月ごとの再認証時にisPremiumフラグが最新化される
+### エラーハンドリング
+- **認証エラー**: `functions.https.HttpsError("unauthenticated")`
+- **バリデーションエラー**: `functions.https.HttpsError("invalid-argument")`
+- **内部エラー**: `functions.https.HttpsError("internal")`
+- **レシピ不足**: `functions.https.HttpsError("failed-precondition")`
 
 ---
 
-## キャラクター台詞マスターテーブル戦略
+## キャラクタードメインIF設計
 
+### インターフェース
+```typescript
+interface CharacterDialogueRequest {
+  trigger: TriggerType;
+  from: FromType;
+}
+
+type TriggerType = 
+  | "meal_decided"
+  | "gacha_decided"
+  | "meal_completed"
+  | "recipe_registered"
+  | "meal_suggested"
+  | "gacha_reroll_limit";
+
+type FromType =
+  | "suggestion"
+  | "gacha"
+  | "gacha_10"
+  | "detail"
+  | "list"
+  | "registration"
+  | "onboarding"
+  | "filtering";
 ```
-【マスター参照（頻繁トリガー）】
-trigger: meal_decided / gacha_decided / recipe_registered / meal_suggested / meal_completed
 
-  CharacterLambda
-      |
-      +---> DynamoDB: CharacterDialoguesマスターテーブルを検索
-      |     （characterId × tone × trigger でフィルタ）
-      +---> ランダムで1件返却（10種類以上から選択）
+### 内部ロジック（フロントエンド内で実行）
+1. `trigger` と `from` から適切な `tone` を決定（組み合わせ定義表に基づく）
+2. `isPremium` と `favoriteCharacters` をAuthContextから取得
+3. Firestoreの `characterDialogues` コレクションからクエリ
+4. 条件に合致する台詞群からランダムで1件選択
+5. キャラクター情報（画像パス・名前）と台詞を返却
 
-【リアルタイム対象（特殊トリガー）】
-trigger: gacha_reroll_limit
+### trigger × tone 組み合わせ定義
 
-  CharacterLambda
-      |
-      +---> Bedrock呼び出し（メシストフェレス固定）
-      +---> 生成されたセリフを返却
-```
+| trigger | tone | 対応キャラクター |
+|---|---|---|
+| meal_decided | praise, empathy | サボ母ちゃん, サボわらし, ニャマケ, サボット |
+| gacha_decided | encouragement, praise | サボエル, サボ母ちゃん, サボわらし |
+| meal_completed | praise, encouragement | サボ母ちゃん, サボわらし, サボエル |
+| recipe_registered | praise, encouragement | サボ母ちゃん, サボわらし, サボエル |
+| meal_suggested | empathy, encouragement | ニャマケ, サボット, サボエル, サボ母ちゃん |
+| gacha_reroll_limit | scolding (固定) | メシストフェレス（固定） |
 
-**マスターデータ管理方針**:
-- CharacterDialoguesテーブルはユーザーデータではなくマスターデータ（全ユーザー共通）
-- マスターデータはBedrockを使って手動生成し、事前にテーブルへ投入する
-- アプリ実行時にBedrockを呼び出してキャッシュを生成する処理は存在しない
-- `meal_suggested` のセリフはフィルタリング画面のキャラクター質問文言として使用（インライン表示）
+### マスターデータ戦略
+- **事前生成**: Claude APIを使って各trigger × tone × characterの組み合わせで複数パターンの台詞を生成
+- **Firestoreに格納**: `characterDialogues` コレクションにマスターデータとして保存
+- **実行時のAPI呼び出しなし**: フロントエンドからFirestoreを直接読み取り（Cloud Functions不要）
+- **コスト**: Firestore読み取りのみ（Claude API呼び出しは事前生成時のみ）
