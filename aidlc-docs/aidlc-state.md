@@ -4,8 +4,8 @@
 - **Project Name**: DAMESI（ダメシ）
 - **Project Type**: Greenfield
 - **Start Date**: 2026-05-03T00:00:00Z
-- **Last Updated**: 2026-06-06T00:30:00Z
-- **Current Stage**: CONSTRUCTION PHASE - Per-Unit Loop (Unit 2: セットアップ／マスターデータ)
+- **Last Updated**: 2026-06-06T03:15:00Z
+- **Current Stage**: CONSTRUCTION PHASE - Per-Unit Loop (Unit 3: 共有基盤)
 
 ## Workspace State
 - **Existing Code**: No
@@ -48,14 +48,21 @@
 - [x] Infrastructure Design - COMPLETED & APPROVED (2026-06-06T02:10:00Z)
 - [x] Code Generation - COMPLETED & APPROVED (2026-06-06T02:40:00Z)
 
-#### Unit 2: セットアップ／マスターデータ（現在）
+#### Unit 2: セットアップ／マスターデータ ✅ 完了
 - [-] Functional Design - SKIPPED（スキーマ定義済み・複雑な業務ロジックなし）
 - [-] NFR Requirements - SKIPPED（新規NFRなし）
 - [-] NFR Design - SKIPPED（連動）
 - [-] Infrastructure Design - SKIPPED（共有基盤利用）
-- [ ] Code Generation - 承認待ち（Part 2完了・マスターデータ+seed）
+- [x] Code Generation - COMPLETED & APPROVED (2026-06-06T03:15:00Z)
 
-#### Unit 3〜8 - 未着手
+#### Unit 3: 共有基盤（現在）
+- [-] Functional Design - SKIPPED（新規データモデル・複雑業務ロジックなし）
+- [-] NFR Requirements - SKIPPED（新規NFRなし・RulesはUnit 1所有）
+- [-] NFR Design - SKIPPED（連動）
+- [-] Infrastructure Design - SKIPPED（共有インフラはUnit 1で定義済み）
+- [ ] Code Generation - 承認待ち（Part 2完了・プリミティブ/UI/lib/Provider/型/テスト）
+
+#### Unit 4〜8 - 未着手
 
 - [ ] Build and Test - EXECUTE（全ユニット完了後）
 
@@ -63,5 +70,5 @@
 - [ ] Operations - PLACEHOLDER
 
 ## 次回セッションの再開ポイント
-- **再開アクション**: Unit 2（セットアップ／マスターデータ）の Functional Design 要否評価から
-- **参照ファイル**: `aidlc-docs/inception/application-design/unit-of-work.md`（Unit 2定義）
+- **再開アクション**: Unit 3（共有基盤）の ステージ要否評価 → Code Generation Part 1（計画）承認から
+- **参照ファイル**: `aidlc-docs/inception/application-design/unit-of-work.md`（Unit 3定義）, `components.md` / `component-methods.md`（shared層）

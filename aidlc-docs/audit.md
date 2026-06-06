@@ -972,3 +972,36 @@
 **Context**: CONSTRUCTION - Unit 2 Code Generation Part 2 完了。承認待ち。
 
 ---
+
+## CONSTRUCTION - Unit 2 Code Generation 承認・Unit 2完了
+**Timestamp**: 2026-06-06T03:15:00Z
+**User Input**: "承認"
+**AI Response**: Unit 2（セットアップ／マスターデータ）のCode Generationが承認された。Unit 2の全ステージ完了（設計4ステージはスキップ済み）。aidlc-state.md を更新（Unit 2 Code Generation → COMPLETED & APPROVED）。Per-Unit Loopの次ユニット Unit 3（共有基盤）へ移行。Unit 3のステージ要否評価から開始する。
+**Context**: CONSTRUCTION - Unit 2 完了。Unit 3へ。
+
+---
+
+## CONSTRUCTION - Unit 3 ステージ要否評価・Code Generation Part 1
+**Timestamp**: 2026-06-06T03:25:00Z
+**User Input**: （Unit 2承認に続く自動遷移）
+**AI Response**: Unit 3（共有基盤）のステージ要否を評価。純粋な技術基盤（汎用Firestoreプリミティブ・UI Element・lib・共通型・Provider）で新規業務ロジック・新規NFR・新規インフラを伴わないため、設計4ステージ（Functional/NFR Req/NFR Design/Infra）をスキップしCode Generationのみ実行と判断。unit3-shared-foundation-code-generation-plan.md を作成（既存Unit 1資産の重複回避・スタイリング方針踏襲・4つの質問[UI Element範囲・共通型範囲・キャラIF先行・テスト範囲]）。
+**Context**: CONSTRUCTION - Unit 3 設計スキップ評価・Code Generation Part 1。回答待ち。
+
+---
+
+## CONSTRUCTION - Unit 3 Code Generation Part 1 承認・Part 2 開始
+**Timestamp**: 2026-06-06T03:35:00Z
+**User Input**: "回答しました"（Q1=A 指定5点UI Element, Q2=B 共通型はマスター型/union型/キャラIF型に絞る・ドメイン型は各機能ユニット, Q3=A キャラIFは型のみ先行, Q4=A プリミティブ中心の単体テスト）
+**AI Response**: 設計4ステージスキップ＋Code Generation計画が確定。Part 2を実行。Q2=Bにより共通型はunion型・マスター型・キャラIF型に限定（Recipe/ConfirmedMenuItem等のドメインエンティティ型は各機能ユニットで定義）。生成: shared/types拡張, shared/hooks(useCollection/useDocument/useMasterData), shared/lib(functions/storage), shared/components/ui(Button/Card/Modal/BottomSheet/LoadingSpinner), app/providers(MasterDataProvider/AppProvider)+App.tsx結線, キャラIF型, 単体テスト, code-summary。
+**Context**: CONSTRUCTION - Unit 3 Code Generation Part 2 実行開始。
+**承認待ち**: 生成後に承認を求める。
+
+---
+
+## CONSTRUCTION - Unit 3 Code Generation Part 2 完了
+**Timestamp**: 2026-06-06T03:50:00Z
+**User Input**: （継続実行）
+**AI Response**: Unit 3のコードを全10ステップ生成。src/shared/types/index.ts拡張（union型/マスター型/キャラIF型・Q2=Bでドメインエンティティ型は除外）, src/shared/hooks/{useCollection,useDocument,useMasterData}.ts, src/app/providers/{MasterDataProvider,AppProvider}.tsx + App.tsx結線, src/shared/lib/{functions,storage}.ts, src/shared/components/ui/{Button,Card,Modal,BottomSheet,LoadingSpinner}.tsx + index.ts, tests/unit/{useCollection,useDocument,useMasterData}.test.ts, code-summary.md。get_diagnosticsで全ファイル型エラーなしを確認。既存Unit 1資産（firebase.ts/types/App.tsx）と非重複。テスト実行はBuild & Testフェーズ。
+**Context**: CONSTRUCTION - Unit 3 Code Generation Part 2 完了。承認待ち。
+
+---
