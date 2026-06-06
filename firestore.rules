@@ -1,0 +1,54 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===== Unit 1: users（プロフィール本体） =====
+    match /users/{uid} {
+      // 本人のみ読み取り可
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      // 作成: 本人のみ。isPremium は false で固定（自己昇格防止 SP-2）
+      allow create: if request.auth != null
+                    && request.auth.uid == uid
+                    && request.resource.data.isPremium == false;
+
+      // 更新: 本人のみ。isPremium / createdAt は変更不可（フィールドレベル保護 SP-2）
+      allow update: if request.auth != null
+                    && request.auth.uid == uid
+                    && request.resource.data.isPremium == resource.data.isPremium
+                    && request.resource.data.createdAt == resource.data.createdAt;
+
+      // 削除は不可
+      allow delete: if false;
+
+      // --- サブコレクションは各ユニットで追記 ---
+      // Unit 5: match /recipes/{recipeId} { ... }
+      // Unit 6: match /confirmedMenuItems/{itemId} { ... }
+    }
+
+    // ===== マスターコレクション（Unit 2 が所有・読み取り専用） =====
+    // 認証ユーザーは読み取りのみ。書き込みは Admin SDK（seed）のみ。
+    match /characterDialogues/{id} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    match /difficultyMaster/{id} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    match /rarityMaster/{id} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    // ガチャ確率: Cloud Functions(Admin SDK)のみ。クライアント読み書き不可。
+    match /gachaConfig/{id} {
+      allow read, write: if false;
+    }
+
+    // ===== デフォルト拒否（SP-3） =====
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

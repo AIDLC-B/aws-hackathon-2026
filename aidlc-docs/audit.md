@@ -908,3 +908,67 @@
 **Context**: CONSTRUCTION - Unit 1 Infrastructure Design Part 2 生成。承認待ち。
 
 ---
+## CONSTRUCTION - Unit 1 Infrastructure Design 承認
+**Timestamp**: 2026-06-06T02:10:00Z
+**User Input**: "承認します"
+**AI Response**: Unit 1のInfrastructure Design成果物（infrastructure-design.md, deployment-architecture.md, shared-infrastructure.md）が承認された。次ステージ Code Generation（必ず実行）へ。Part 1（コード生成計画）を作成する。
+**Context**: CONSTRUCTION - Unit 1 Infrastructure Design 承認完了。Code Generationへ。
+
+---
+## CONSTRUCTION - Unit 1 Code Generation Part 1（計画）
+**Timestamp**: 2026-06-06T02:15:00Z
+**User Input**: （Infrastructure Design承認に続く自動遷移）
+**AI Response**: Unit 1のCode Generation Part 1（計画）を作成。greenfieldモノレポ・コードはワークスペースルート（src/, firebase.json等）に配置。プロジェクトscaffold + Firebase初期化 + Google認証(useAuth/AuthProvider/LoginPage) + Security Rules + CI + テストの生成ステップを定義。Unit 3未実装のためusersドキュメントアクセスは当面直接Firestore呼び出しとし、Unit 3完成後にプリミティブへリファクタする方針を明記。
+**Context**: CONSTRUCTION - Unit 1 Code Generation Part 1。計画の承認待ち。
+
+---
+## CONSTRUCTION - Unit 1 Code Generation Part 1 承認・Part 2 開始
+**Timestamp**: 2026-06-06T02:20:00Z
+**User Input**: "承認"
+**AI Response**: コード生成計画が承認された。Part 2（生成）をStep 1〜11で実行。コードはワークスペースルート（src/, firebase.json等）に配置、ドキュメントはaidlc-docs/construction/unit1-firebase-foundation-auth/code/に配置。
+**Context**: CONSTRUCTION - Unit 1 Code Generation Part 2 実行開始。
+
+---
+## CONSTRUCTION - Unit 1 Code Generation Part 2 完了
+**Timestamp**: 2026-06-06T02:35:00Z
+**User Input**: （継続実行）
+**AI Response**: Unit 1のコードを全11ステップ生成。ワークスペースルートに配置（package.json, tsconfig, vite.config, index.html, src/main.tsx, .env.example, .gitignore, eslint.config.js / src/shared/lib/firebase.ts, src/shared/types/index.ts, src/shared/utils/authErrorMapper.ts / src/features/auth/hooks/useAuth.ts, components/GoogleSignInButton.tsx, pages/LoginPage.tsx / src/app/providers/AuthProvider.tsx, routes.tsx, App.tsx / firestore.rules, storage.rules, firestore.indexes.json, firebase.json / .github/workflows/deploy.yml / README.md / tests: authErrorMapper.test.ts, useAuth.test.ts, RouteGuard.test.tsx, rules/firestore.rules.test.ts）。ドキュメントはaidlc-docs/construction/unit1-firebase-foundation-auth/code/code-summary.md。US-17/18実装。テスト実行はBuild & Testフェーズ。
+**Context**: CONSTRUCTION - Unit 1 Code Generation Part 2 完了。承認待ち。
+
+---
+## CONSTRUCTION - Unit 1 Code Generation 承認・Unit 1完了
+**Timestamp**: 2026-06-06T02:40:00Z
+**User Input**: "承認"
+**AI Response**: Unit 1のコード生成が承認された。Unit 1（Firebase基盤 & 認証）の全ステージ完了。Per-Unit Loopの次ユニット Unit 2（セットアップ／マスターデータ）へ移行。Unit 2のFunctional Design要否を評価。
+**Context**: CONSTRUCTION - Unit 1 完了。Unit 2へ。
+
+---
+## CONSTRUCTION - Unit 2 ステージ要否・Code Generation Part 1
+**Timestamp**: 2026-06-06T02:45:00Z
+**User Input**: "承認"（Unit 2の設計4ステージ[Functional/NFR Req/NFR Design/Infra]スキップ、Code Generationのみ実行を承認）
+**AI Response**: Unit 2のFunctional Design / NFR Requirements / NFR Design / Infrastructure Design をスキップ（スキーマ定義済み・新規NFR/インフラなし・共有基盤利用）。Code Generationのみ実行。Part 1計画を作成し、characterDialoguesの内容方針等を質問。
+**Context**: CONSTRUCTION - Unit 2 設計スキップ承認。Code Generation Part 1へ。
+
+---
+## CONSTRUCTION - Unit 2 Code Generation 回答受領・矛盾フォローアップ
+**Timestamp**: 2026-06-06T02:50:00Z
+**User Input**: "回答しました"（Q1=C 最小1パターン, Q2=A 各2〜3パターン, Q3=A, Q4=A, Q5=B プレミアムも用意[詳細記述なし]）
+**AI Response**: (1) Q1=C（1パターン）とQ2=A（2〜3パターン）が矛盾 → フォローアップQ1aで分量を確定。(2) Q5=Bだがプレミアム専用セリフの範囲未記述 → フォローアップQ5aで範囲を確認。
+**Context**: CONSTRUCTION - Unit 2 Code Generation フォローアップ。回答待ち。
+
+---
+## CONSTRUCTION - Unit 2 Code Generation 生成開始
+**Timestamp**: 2026-06-06T02:55:00Z
+**User Input**: "回答しました"（Q2a=A 各2〜3パターン, Q5a=A 各キャラに数パターンずつisPremium追加）
+**AI Response**: 矛盾解消・全回答確定。Unit 2のコード生成を実行。SETUP.md / マスターデータJSON（difficulty/rarity/gachaConfig/characterDialogues）/ seed.ts(firebase-admin・環境切替) / seed package.json / ドキュメントを生成。characterDialoguesは各trigger×キャラに2パターン+各キャラにプレミアム数パターン。
+**Context**: CONSTRUCTION - Unit 2 Code Generation Part 2 生成。
+**承認待ち**: 生成後に承認を求める。
+
+---
+## CONSTRUCTION - Unit 2 Code Generation 完了
+**Timestamp**: 2026-06-06T03:05:00Z
+**User Input**: （継続実行）
+**AI Response**: Unit 2のコードを全6ステップ生成。setup/SETUP.md, setup/seed/data/{difficulty-master,rarity-master,gacha-config,character-dialogues}.json（dialogues 50件: 無料36+プレミアム14）, setup/seed/seed.ts（firebase-admin・Emulator/本番切替・冪等）, setup/seed/package.json・tsconfig.json, aidlc-docs/construction/unit2-setup-masterdata/code/code-summary.md。整合性確認でfirestore.rulesのマスターcoレクション読み取り専用ルールを有効化（characterDialogues/difficultyMaster/rarityMaster: 認証読み取り可, gachaConfig: 不可）。JSON妥当性検証済み。
+**Context**: CONSTRUCTION - Unit 2 Code Generation Part 2 完了。承認待ち。
+
+---

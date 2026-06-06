@@ -1,0 +1,6 @@
+[
+  { "id": "N", "label": "N", "order": 1 },
+  { "id": "R", "label": "R", "order": 2 },
+  { "id": "SR", "label": "SR", "order": 3 },
+  { "id": "SSR", "label": "SSR", "order": 4 }
+]

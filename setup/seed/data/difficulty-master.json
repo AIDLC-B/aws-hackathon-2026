@@ -1,0 +1,5 @@
+[
+  { "id": "easy", "label": "かんたん", "order": 1 },
+  { "id": "normal", "label": "ふつう", "order": 2 },
+  { "id": "hard", "label": "むずかしい", "order": 3 }
+]

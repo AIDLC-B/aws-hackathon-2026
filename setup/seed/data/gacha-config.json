@@ -1,0 +1,6 @@
+[
+  { "rarity": "N", "probability": 0.6 },
+  { "rarity": "R", "probability": 0.25 },
+  { "rarity": "SR", "probability": 0.12 },
+  { "rarity": "SSR", "probability": 0.03 }
+]
