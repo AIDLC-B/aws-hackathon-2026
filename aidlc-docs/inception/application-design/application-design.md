@@ -6,8 +6,10 @@
 |---|---|
 | **アーキテクチャ** | Firebase全面採用 + Anthropic Claude API |
 | **フロントエンド** | React + TypeScript、FSD的4階層モデル |
-| **データアクセス** | フロントエンドからFirestore直接操作（Security Rules保護） |
+| **データアクセス** | フロントエンドからFirestore・Cloud Storage直接操作（Security Rules保護） |
+| **CRUD責務分離** | 2層構造（共通: 汎用Firestoreプリミティブ@shared / ドメイン固有: 各feature hooks） |
 | **Cloud Functions** | 最小限（Claude API呼び出し + ビジネスロジック） |
+| **ストレージ** | Cloud Storageへブラウザ直接アクセス（アップロード・読み取り）、Storage Security Rulesで本人限定 |
 | **認証** | Firebase Authentication（メール+パスワード） |
 | **データモデル** | ハイブリッド（ユーザーデータ=サブコレクション、マスターデータ=トップレベル） |
 | **コスト最適化** | Firebase無料枠内運用、非正規化でFirestore読み取り削減 |
@@ -80,6 +82,8 @@
 |---|---|---|
 | `characterDialogues/{dialogueId}` | キャラクター台詞 | 全認証ユーザー読み取り可、管理者のみ書き込み |
 | `gachaConfig/{configId}` | ガチャ確率設定 | Cloud Functionsのみ読み取り、管理者のみ書き込み |
+| `difficultyMaster/{difficultyId}` | 難易度マスター（id, label, order） | 全認証ユーザー読み取り可、管理者のみ書き込み |
+| `rarityMaster/{rarityId}` | レアリティマスター（id, label, order・確率はgachaConfig） | 全認証ユーザー読み取り可、管理者のみ書き込み |
 
 ---
 
@@ -111,6 +115,16 @@ service cloud.firestore {
       allow write: if false; // 管理者はAdmin SDKで操作
     }
     
+    // 難易度・レアリティマスター: 認証ユーザーは読み取りのみ
+    match /difficultyMaster/{difficultyId} {
+      allow read: if request.auth != null;
+      allow write: if false; // 管理者はAdmin SDKで操作
+    }
+    match /rarityMaster/{rarityId} {
+      allow read: if request.auth != null;
+      allow write: if false; // 管理者はAdmin SDKで操作
+    }
+    
     // ガチャ設定: Cloud Functionsのみ（Admin SDK）
     match /gachaConfig/{configId} {
       allow read, write: if false; // Admin SDKのみ
@@ -118,6 +132,57 @@ service cloud.firestore {
   }
 }
 ```
+
+---
+
+## Cloud Storage アクセス設計
+
+### アクセス方針
+- **アップロード**: ブラウザ（Firebase SDK）から Cloud Storage へ直接アップロード
+- **読み取り**: ブラウザから Cloud Storage の画像URLを直接参照
+- **Cloud Functions非経由**: 署名付きURL発行などのサーバー処理を挟まず、Security Rulesで保護
+- **画像認識との関係**: CF-01（analyzeRecipeImage）は認識処理のみを担当し、ストレージ保存はフロントエンドが直接実施
+
+### ディレクトリ構成
+```
+recipe-images/{uid}/{recipeId}.jpg      # 料理写真（本人のみ読み書き）
+```
+
+### Cloud Storage Security Rules 概要
+
+```javascript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // 料理写真: 本人のディレクトリのみ読み書き可
+    match /recipe-images/{uid}/{fileName} {
+      // 読み取り: 本人のみ
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      // 書き込み: 本人のみ + 画像のみ + 5MB以下
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+
+      // 削除: 本人のみ
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // その他のパスはすべて拒否
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+```
+
+### セキュリティ確保のポイント
+1. **本人ディレクトリ限定**: `recipe-images/{uid}/` のパスで `request.auth.uid == uid` を強制
+2. **ファイルサイズ制限**: 5MB以下（アップロード前のフロントエンド圧縮（最大1MB）と二重防御）
+3. **MIME型制限**: `image/*` のみ許可（不正なファイルアップロード防止）
+4. **デフォルト拒否**: 定義外パスはすべて `allow read, write: if false`
 
 ---
 
@@ -136,8 +201,68 @@ src/
 │   ├── character/          # AIキャラクター（FR-03）
 │   └── settings/           # 設定
 ├── shared/                 # 共有（UI Element, hooks, lib, types）
+│   └── hooks/              # 汎用Firestoreプリミティブ（useCollection, useDocument）
 └── assets/                 # 静的アセット（キャラクター画像, ガチャ画像）
 ```
+
+---
+
+## CRUD責務分離（2層構造）
+
+各featureに散在していたFirestore CRUDを2層に分離し、SDK直接依存をshared層に集約する。
+
+### 層1: 汎用Firestoreプリミティブ（shared/hooks）
+
+| プリミティブ | 役割 |
+|---|---|
+| `useCollection<T>(path, queryConstraints?)` | コレクションのリアルタイム購読 + 汎用 create/createWithId/getOnce。型はジェネリック `<T>` |
+| `useDocument<T>(path)` | 単一ドキュメントのリアルタイム購読 + 汎用 update/remove/getOne |
+
+- **共通化する横断的関心事**: ローディング状態、エラーハンドリング、購読解除（unsubscribe）、型安全性
+- **特徴**: コレクション非依存の薄いラッパー。Firestore SDKへの依存はこの層のみ
+
+### 層2: ドメイン固有CRUD（各feature/hooks）
+
+- プリミティブを内部利用し、**コレクションパス・スキーマ・バリデーション・業務ルール**を保持
+- Firestore SDKを直接呼ばない
+- 例: `useRecipes()` → 内部で `useCollection<Recipe>('users/{uid}/recipes')`
+
+```
+[Component] → [層2: useRecipes / useConfirmedMenu 等（業務ルール・バリデーション）]
+            → [層1: useCollection / useDocument（汎用・型安全・共通エラー/ローディング）]
+            → [Firestore SDK]
+```
+
+### 効果
+- CRUDロジックの重複排除
+- エラー/ローディング状態管理の一元化
+- ジェネリック型による型安全性の確保
+- ドメインロジックとデータアクセス基盤の関心分離
+
+---
+
+## マスターデータ管理方針
+
+enum的な埋め込み値のうち、付随属性を持つものをマスター化し、純粋な制御フロー/分類用enumはコード（TypeScript union型）に残す。
+
+### マスター化の判定基準
+- **マスター化する**: 付随属性（ラベル・表示順・色・確率など）を持つ／表示・計算で参照される／将来変更し得る
+- **コードのまま残す**: 付随属性を持たない制御フロー/分類用enum／UIロジックに密結合／型安全性を優先
+
+### 対象一覧
+
+| 値 | 扱い | 保存場所 | 属性 |
+|---|---|---|---|
+| `difficulty` (easy/normal/hard) | マスター化 | Firestore `difficultyMaster` | id, label, order |
+| `rarity` (N/R/SR/SSR) | マスター化（表示属性） | Firestore `rarityMaster` | id, label, order（確率は `gachaConfig`） |
+| `tone` / `trigger` / `from` / `source` | コードのまま | TypeScript union型 | — |
+| `characterId` (7キャラ) | コードのまま（今回マスター化しない） | TypeScript union型 + 静的アセット | — |
+
+### 取得・キャッシュ
+- **MasterDataProvider（app/providers）**: 起動時に `difficultyMaster` / `rarityMaster` を1回ずつ取得（getOnce）し、Context経由で全体提供
+- **セッション内キャッシュ**: 再取得なし（Firestore読み取り最小化）
+- **参照**: コンポーネントは `useMasterData()` でラベル・表示順を取得。ドキュメントには識別子（id文字列）のみ保存
+- **保護**: Security Rulesで読み取り専用（書き込みはAdmin SDKのみ）
 
 ---
 

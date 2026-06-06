@@ -724,3 +724,187 @@
 **Context**: INCEPTION - Application Design 成果物生成完了・承認待ち
 
 ---
+## Application Design - セッション再開・整合性確認
+**Timestamp**: 2026-06-06T00:00:00Z
+**User Input**: "Using AI-DLC,続きから開始"
+**AI Response**: aidlc-state.md と session-resume.md を読み込み、現在のステージが INCEPTION - Application Design であることを確認。application-design-plan.md は全質問回答済み・全成果物生成済みで、残りは整合性確認のみと判定。5つの成果物（components.md, component-methods.md, services.md, component-dependency.md, application-design.md）の整合性を確認。components.md に useOnboarding.ts / useSettings.ts の記載漏れを発見し修正。整合性チェックボックスを完了に更新。
+**Context**: INCEPTION - Application Design 整合性確認完了。ユーザーの承認待ち。
+
+---
+## Application Design - 変更依頼（Cloud Storage直接アクセス）
+**Timestamp**: 2026-06-06T00:05:00Z
+**User Input**: "Cloudstorageへのアクセスをブラウザから直接やった方がいいと思うので変更して。ただし、セキュリティルールをしっかり守りたいので忘れないようにPLANにも反映しておいて。"
+**AI Response**: Cloud Storageへのアクセス（アップロード・読み取り）をブラウザから直接行う方針を設計に明記。Cloud Storage Security Rules を新規追加（本人のディレクトリのみ読み書き可、ファイルサイズ・MIME型制限）。application-design-plan.md に Storage Security Rules 設計項目を追加して反映。components.md, services.md, component-dependency.md, application-design.md を更新。
+**Context**: INCEPTION - Application Design 変更依頼対応。
+
+---
+## Application Design - 変更依頼（CRUD共通化・2層構造）
+**Timestamp**: 2026-06-06T00:10:00Z
+**User Input**: "CRUD操作が各featureに存在してしまっているので、以下の通りに役割で分けて一部を共通化（SHAREDに作成）したいです。 1.汎用Firestoreプリミティブ ：コレクション非依存の薄いラッパー。useCollection(path) / useDocument(path) / 汎用的な create/update/delete。型はジェネリック。エラー・ローディング・購読解除を共通化してSHAREDへ。 2.ドメイン固有CRUD：プリミティブを使う側。コレクション名・スキーマ・バリデーション・業務ルールを保持。例：useRecipes() が内部で useCollection<Recipe>('recipes') を呼ぶ"
+**AI Response**: CRUDを2層に分離。(1) shared/hooks に汎用Firestoreプリミティブ（useCollection<T>(path) / useDocument<T>(path) と汎用 create/update/delete、エラー・ローディング・購読解除を共通化）を新設。(2) 各featureのドメイン固有hooks（useRecipes等）はプリミティブを内部利用し、コレクション名・スキーマ・バリデーション・業務ルールのみを保持。components.md, component-methods.md, services.md, application-design.md, application-design-plan.md を更新。
+**Context**: INCEPTION - Application Design 変更依頼対応（CRUD共通化）。
+
+---
+## Application Design - 変更依頼（マスター化方針）
+**Timestamp**: 2026-06-06T00:15:00Z
+**User Input**: "マスター化すべきものがそのままFirestoreに値として入ってしまっているので、一定マスターを利用したいです。enum的な「埋め込み値」はあちこちにあり、全部マスター化するとやり過ぎなので、「何をマスター化し、何はコードのまま残すか」を決めたいですが、今のところ、difficulty とrarityはマスター化したいと思っています。"
+**AI Response**: マスター化方針の決定には複数の論点（保存場所、保持属性、判定基準）があるため、application-design-plan.md にQuestion 10〜12を追記してユーザーの回答を依頼。difficulty/rarityをマスター化する方向で、判定基準（属性を持つ/表示順がある/確率等のメタを伴う値はマスター、純粋な制御フローenumはコードのまま）を提案。
+**Context**: INCEPTION - Application Design 変更依頼対応（マスター化方針）。ユーザーの回答待ち。
+
+---
+## Application Design - マスター化方針 回答受領
+**Timestamp**: 2026-06-06T00:20:00Z
+**User Input**: "回答しました"（Q10=A（キャラクターは除外）, Q11=B, Q12=A, Q13=B）
+**AI Response**: 回答を確認。difficulty/rarity を Firestoreマスターコレクション（difficultyMaster / rarityMaster）として管理。属性は最小構成（id, label, order）。rarityの確率はgachaConfigが引き続き保持。characterIdはマスター化しない。判定基準を採用し、tone/trigger/from/source はTypeScript union型のままコードに残す。成果物（components.md, component-methods.md, services.md, component-dependency.md, application-design.md）とstateを更新。
+**Context**: INCEPTION - Application Design マスター化方針 確定・反映。
+
+---
+## Application Design - 変更依頼（CF-02/duration/ガチャ確率の明確化）
+**Timestamp**: 2026-06-06T00:25:00Z
+**User Input**: "以下３点、ClaudeCodeに聞いて不明瞭な部分があったので直してください。(1) CF-02のmoodが何も絞り込めない → moodは現状絞り込みに使わなくてOK。今後の要件次第で絞り込みできるようにする程度の認識でOK、その追記。(2) durationの型が場所によって違う → numberに統一。変換不要。(3) ガチャ確率の定義場所が二重 → gachaConfigから取得、の明確化（デフォルト値: N60%…）"
+**AI Response**: (1) CF-02のmoodは現状フィルタ未使用、将来拡張用の予約パラメータと明記。(2) CF-02入力のdurationをstring→numberに統一し変換ルールを撤廃。(3) CF-03の確率記述を「gachaConfigから取得（デフォルト値: N=60%, R=25%, SR=12%, SSR=3%）」に明確化。components.md, component-methods.md, services.md を更新。
+**Context**: INCEPTION - Application Design 変更依頼対応（整合性明確化）。
+
+---
+## Application Design - 承認
+**Timestamp**: 2026-06-06T00:30:00Z
+**User Input**: "承認します"
+**AI Response**: Application Designステージの全成果物（components.md, component-methods.md, services.md, component-dependency.md, application-design.md）が承認された。aidlc-state.md を更新し、Application Design を COMPLETED & APPROVED に。次ステージ Units Generation へ移行。
+**Context**: INCEPTION - Application Design 承認完了。Units Generation へ進む。
+
+---
+## Units Generation - 開始（Part 1 計画・Firebase版への再生成）
+**Timestamp**: 2026-06-06T00:35:00Z
+**User Input**: （Application Design承認に続く自動遷移）
+**AI Response**: 既存のUnits Generation成果物（unit-of-work.md, unit-of-work-dependency.md, unit-of-work-story-map.md, unit-of-work-plan.md）が旧AWSアーキテクチャ（Lambda BE-01〜05・DynamoDB・Cognito・SAM/DynamoDB Local）ベースで現在のFirebaseアーキテクチャと不整合と判定。Units Generation Part 1（計画）を再実行。unit-of-work-plan.md をFirebase版に刷新し、ユニット分解の質問（Q1〜Q7）を作成してユーザーの回答を依頼。
+**Context**: INCEPTION - Units Generation Part 1 開始。ユーザーの回答待ち。
+
+---
+## Units Generation - Part 1 回答受領・フォローアップ
+**Timestamp**: 2026-06-06T00:40:00Z
+**User Input**: "回答しました"（Q1=C, Q2=A, Q3=A, Q4=B, Q5=C「別フォルダでインストレーションガイドなどと一緒に管理」, Q6=A, Q7=A「すでにフォルダ構成は決定している認識だが？」）
+**AI Response**: 回答を確認。Q7コメントに対し、フロントエンドsrc/構成はApplication Designで確定済みである旨を説明（Q7はリポジトリ最上位構成の確認）。Q5=Cはseedの所属ユニットが曖昧なため、フォローアップ質問Q5aを追加して所属（独立セットアップユニット化 or 基盤ユニット内の別フォルダ）を明確化。
+**Context**: INCEPTION - Units Generation Part 1 フォローアップ質問。回答待ち。
+
+---
+## Units Generation - Part 1 完了・Part 2 生成開始
+**Timestamp**: 2026-06-06T00:45:00Z
+**User Input**: "回答済み"（Q5a=A: 独立したセットアップ／マスターデータユニット）
+**AI Response**: 全回答確定（Q1=C, Q2=A, Q3=A, Q4=B, Q5+5a=A, Q6=A, Q7=A）。8ユニット構成を確定（Unit1: Firebase基盤&認証 / Unit2: セットアップ・マスターデータ / Unit3: 共有基盤 / Unit4: Cloud Functions / Unit5: 料理管理 / Unit6: 献立提案 / Unit7: 献立ガチャ / Unit8: AIキャラクター）。unit-of-work.md / unit-of-work-dependency.md / unit-of-work-story-map.md をFirebase版で再生成。
+**Context**: INCEPTION - Units Generation Part 2 生成。
+**承認プロンプト**: 「Unit of work plan complete. Ready to proceed to generation?」に相当する回答を受領済み。
+
+---
+## Units Generation - 承認・INCEPTION完了
+**Timestamp**: 2026-06-06T00:50:00Z
+**User Input**: "承認"
+**AI Response**: Units Generation成果物（unit-of-work.md, unit-of-work-dependency.md, unit-of-work-story-map.md）が承認された。Units Generationを COMPLETED & APPROVED に。INCEPTIONフェーズ完了。CONSTRUCTION PHASEへ移行（Per-Unit Loop: Unit 1 Firebase基盤&認証 から開始）。
+**Context**: INCEPTION - Units Generation 承認完了。CONSTRUCTION PHASEへ。
+
+---
+## CONSTRUCTION - Unit 1 Functional Design 開始
+**Timestamp**: 2026-06-06T00:55:00Z
+**User Input**: （Units Generation承認に続く自動遷移）
+**AI Response**: Unit 1（Firebase基盤 & 認証）のFunctional Designを実行と判断（usersデータモデル・認証業務ルール・フロントエンドコンポーネントを含むため）。機能設計計画 unit1-firebase-foundation-auth-functional-design-plan.md を作成し、認証フロー（特にFirebase Authのメール検証方式がCognito前提のストーリー記述と異なる点）等の質問を提示。
+**Context**: CONSTRUCTION - Unit 1 Functional Design Part 1（計画）。回答待ち。
+
+---
+## CONSTRUCTION - Unit 1 Functional Design 回答受領・フォローアップ
+**Timestamp**: 2026-06-06T01:00:00Z
+**User Input**: "回答しました（ハッカソンは落選しましたので、今後は個人開発です・・・）"（Q1=D Googleアカウント認証に変更, Q2=A, Q3=C パスワード不要, Q4=A, Q5=A, Q6=A, Q7=A, Q8=A）
+**AI Response**: Q1=Dにより認証方式がメール+パスワード→Google認証(OAuth)へ変更。これに伴いnickname/emailの取得元・サインアップ画面構成・US-17/18のCognito前提AC（確認コード等）が影響を受けるため、フォローアップ質問Q1a（nickname扱い）, Q1b（ログイン/サインアップ画面統合）, Q7a（Google認証のエラーマッピング）を追加。ハッカソン落選・個人開発移行を認識（コスト最適化方針は維持）。
+**Context**: CONSTRUCTION - Unit 1 Functional Design フォローアップ。回答待ち。
+
+---
+## CONSTRUCTION - Unit 1 Functional Design 生成
+**Timestamp**: 2026-06-06T01:05:00Z
+**User Input**: "回答しました"（Q1a=A displayName→nickname自動セット・設定で変更可, Q1b=A ログイン画面に統合しSignUpPage廃止, Q7a=A Google認証エラーマッピング）
+**AI Response**: 全回答確定。Google認証ベースでUnit 1機能設計を生成。Q2=Aは「初回サインイン時に存在チェックして無ければusersドキュメント作成」と解釈。domain-entities.md / business-rules.md / business-logic-model.md / frontend-components.md を生成。US-17/18のCognito前提ACはGoogle認証前提に置換。
+**Context**: CONSTRUCTION - Unit 1 Functional Design Part 2 生成。
+**承認待ち**: 機能設計成果物の承認待ち。
+
+---
+## INCEPTION（遡及更新）- ストーリー US-17/18 Google認証化
+**Timestamp**: 2026-06-06T01:10:00Z
+**User Input**: "ストーリー文書も更新"
+**AI Response**: Unit 1のGoogle認証採用に伴い、stories.md の US-17（サインアップ・ログイン）と US-18（ログアウト）のAC・画面レイアウトをGoogle認証前提へ更新。ドメイン見出しのCognito表記をFirebase Auth(Google)へ修正。ニックネームはGoogle displayNameから自動セット・設定で変更可へ。確認コード/パスワード関連ACを削除。
+**Context**: INCEPTION成果物の遡及更新（Construction中の設計変更を反映）。
+
+---
+## CONSTRUCTION - Unit 1 Functional Design 承認
+**Timestamp**: 2026-06-06T01:15:00Z
+**User Input**: "承認"
+**AI Response**: Unit 1のFunctional Design成果物（domain-entities.md, business-rules.md, business-logic-model.md, frontend-components.md）が承認された。stories.md（US-17/18）のGoogle認証化も完了。Functional Designを完了とし、次ステージ NFR Requirements を評価。
+**Context**: CONSTRUCTION - Unit 1 Functional Design 承認完了。NFR Requirementsへ。
+
+---
+## CONSTRUCTION - Unit 1 NFR Requirements 開始
+**Timestamp**: 2026-06-06T01:20:00Z
+**User Input**: （Functional Design承認に続く自動遷移）
+**AI Response**: Unit 1のNFR Requirementsを実行と判断（認証・認可・Security Rulesが中心でSecurity Baseline拡張も有効）。個人開発・Firebase無料枠前提で焦点を絞った質問を作成（認証フロー方式・Security Rulesフィールドレベル保護・スケール想定・対象ブラウザ/レスポンシブ・プライバシースコープ）。nfr-requirements計画を作成。
+**Context**: CONSTRUCTION - Unit 1 NFR Requirements Part 1（計画）。回答待ち。
+
+---
+## CONSTRUCTION - Unit 1 NFR Requirements 回答受領・矛盾フォローアップ
+**Timestamp**: 2026-06-06T01:25:00Z
+**User Input**: "回答しました"（Q1=A, Q2=B, Q3=A, Q4=A, Q5=A, Q6=A）
+**AI Response**: Q2=B（isPremium個別保護なし）が承認済みFunctional Design BR-7.2（isPremiumクライアント変更不可）と矛盾。Q2=Bではユーザーが自分のusersドキュメントのisPremiumを書き換え可能となり権限昇格リスク（プレミアム無料解放）が生じる。Security Baseline拡張（有効）の観点でも要注意。フォローアップ質問Q2aを追加し、リスク受容(B維持)かフィールドレベル保護(A採用)かを確認。
+**Context**: CONSTRUCTION - Unit 1 NFR Requirements フォローアップ（セキュリティ矛盾）。回答待ち。
+
+---
+## CONSTRUCTION - Unit 1 NFR Requirements 生成
+**Timestamp**: 2026-06-06T01:30:00Z
+**User Input**: "回答しました"（Q2a=A フィールドレベル保護採用・BR-7.2維持）
+**AI Response**: 矛盾解消。最終回答（Q1=A ポップアップ, Q2a=A isPremium/createdAtフィールドレベル保護, Q3=A 無料枠SLOなし, Q4=A モバイルファースト+PCレスポンシブ, Q5=A ベストエフォート, Q6=A 最小スコープ）。nfr-requirements.md と tech-stack-decisions.md を生成。Security Baseline拡張準拠（認可バイパス防止）。
+**Context**: CONSTRUCTION - Unit 1 NFR Requirements Part 2 生成。承認待ち。
+
+---
+## CONSTRUCTION - Unit 1 NFR Requirements 承認
+**Timestamp**: 2026-06-06T01:35:00Z
+**User Input**: "承認"
+**AI Response**: Unit 1のNFR Requirements成果物（nfr-requirements.md, tech-stack-decisions.md）が承認された。次ステージ NFR Design を評価。NFR Requirementsが実行されたため NFR Design も実行（NFRパターンの具体化：Security Rules詳細・認証フロー実装パターン等）。
+**Context**: CONSTRUCTION - Unit 1 NFR Requirements 承認完了。NFR Designへ。
+
+---
+## CONSTRUCTION - Unit 1 NFR Design 開始
+**Timestamp**: 2026-06-06T01:40:00Z
+**User Input**: （NFR Requirements承認に続く自動遷移）
+**AI Response**: Unit 1のNFR Designを実行（NFR Requirements実行済みのため）。セキュリティパターンは確定済みだが、usersドキュメント作成の冪等性/競合対策・リトライ戦略・Security Rulesテスト方針など残論点について焦点を絞った質問を作成。nfr-design計画を作成。
+**Context**: CONSTRUCTION - Unit 1 NFR Design Part 1（計画）。回答待ち。
+
+---
+## CONSTRUCTION - Unit 1 NFR Design 生成
+**Timestamp**: 2026-06-06T01:45:00Z
+**User Input**: "回答しました"（Q1=A getDoc存在確認→setDoc, Q2=A リトライなし・エラー表示, Q3=A Emulator+Rules単体テスト, Q4=A React Context+useAuth）
+**AI Response**: 全回答A・明確。nfr-design-patterns.md と logical-components.md を生成。セキュリティパターン（フィールドレベルRules・OAuth委譲）、レジリエンス（リトライなし・エラーマッピング）、UXパターン、論理コンポーネント（AuthProvider/エラーマッパー/Rules）を定義。
+**Context**: CONSTRUCTION - Unit 1 NFR Design Part 2 生成。承認待ち。
+
+---
+## CONSTRUCTION - Unit 1 NFR Design 承認
+**Timestamp**: 2026-06-06T01:50:00Z
+**User Input**: "承認します"
+**AI Response**: Unit 1のNFR Design成果物（nfr-design-patterns.md, logical-components.md）が承認された。次ステージ Infrastructure Design を評価。
+**Context**: CONSTRUCTION - Unit 1 NFR Design 承認完了。Infrastructure Designへ。
+
+---
+## CONSTRUCTION - Unit 1 Infrastructure Design 開始
+**Timestamp**: 2026-06-06T01:55:00Z
+**User Input**: （NFR Design承認に続く自動遷移）
+**AI Response**: Unit 1のInfrastructure Designを実行と判断（Firebase基盤を所有しプロジェクト全体の共有インフラを定義するため）。環境構成・Firestoreリージョン（後から変更不可・重要）・デプロイ/CI・モニタリングについて質問を作成。infrastructure-design計画を作成。
+**Context**: CONSTRUCTION - Unit 1 Infrastructure Design Part 1（計画）。回答待ち。
+
+---
+## CONSTRUCTION - Unit 1 Infrastructure Design 回答受領・リージョンフォローアップ
+**Timestamp**: 2026-06-06T02:00:00Z
+**User Input**: "回答しました"（Q1=A 単一プロジェクト+Emulator, Q2=C usリージョン, Q3=B GitHub Actions CI/CD, Q4=A Firebaseコンソール標準, Q5=A Blaze）
+**AI Response**: Q2=C「usリージョン」はUSに複数のFirestoreロケーション（単一: us-central1/us-east1等、マルチ: nam5）がありコスト差・変更不可のため、正確なロケーション確定のフォローアップQ2aを追加（コスト最小のus-central1単一リージョンを推奨）。
+**Context**: CONSTRUCTION - Unit 1 Infrastructure Design フォローアップ（リージョン確定）。回答待ち。
+
+---
+## CONSTRUCTION - Unit 1 Infrastructure Design 生成
+**Timestamp**: 2026-06-06T02:05:00Z
+**User Input**: "回答しました"（Q2a=A us-central1）
+**AI Response**: 全回答確定（Q1=A 単一プロジェクト+Emulator, Q2=us-central1, Q3=B GitHub Actions CI/CD, Q4=A Firebaseコンソール標準, Q5=A Blazeプラン）。infrastructure-design.md / deployment-architecture.md / shared-infrastructure.md（全ユニット共有）を生成。
+**Context**: CONSTRUCTION - Unit 1 Infrastructure Design Part 2 生成。承認待ち。
+
+---

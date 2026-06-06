@@ -1,119 +1,132 @@
-# Units Generation 計画
+# Units Generation 計画（Firebase版）
+
+> **注**: 本計画は旧AWS版（Lambda/DynamoDB/Cognito）を全面刷新し、現行のFirebaseアーキテクチャ（Cloud Functions + Firestore + Cloud Storage + Firebase Auth + Claude API、フロントエンド直接アクセス + CRUD 2層構造 + マスターデータ）に基づいて再構成したものです。
 
 ## 計画サマリー
 
-Application Design で確定した4ドメイン構成をベースに、ユニット分解を行う。
+現行アーキテクチャはフロントエンド中心（React + FSD 8ドメイン）で、バックエンドは最小限のCloud Functions 3種（CF-01/02/03）のみ。認証はFirebase Auth（マネージド）、データアクセスはフロントエンドからFirestore/Cloud Storageへ直接（Security Rulesで保護）。この特性を踏まえたユニット分解を決定する。
 
-### 想定ユニット構成（Application Design から導出）
+### アーキテクチャ要素の棚卸し
 
-| ユニット | ドメイン | 対応FR | 対応Lambda | 優先度 |
-|---|---|---|---|---|
-| Unit 1: 料理管理 | 料理管理ドメイン | FR-00, FR-01 | BE-01: RecipeManagementLambda | 🔴 Must |
-| Unit 2: 献立提案 | 献立提案ドメイン | FR-02 | BE-02: MenuSuggestionLambda | 🔴 Must |
-| Unit 3: 献立ガチャ | ガチャドメイン | FR-05 | BE-03: GachaLambda | 🔴 Must |
-| Unit 4: AIキャラクター | キャラクタードメイン | FR-03, FR-06 | BE-04: CharacterLambda | 🟡 Should |
-
-### 横断的関心事（ユニットに含めない）
-
-| 項目 | 対応 | 理由 |
-|---|---|---|
-| 認証（BE-05: AuthLambda） | 全ユニット共通の前提条件 | 独立ユニットにするほどの規模ではない |
-| フロントエンド shared/ | 全ユニットで共有 | UI Element・共通Hook・Context |
+| 要素 | 内容 |
+|---|---|
+| フロントエンド features | auth / onboarding / recipe / suggestion / gacha / confirmedMenu / character / settings |
+| フロントエンド shared | useCollection / useDocument（汎用プリミティブ）, useMasterData, UI Element, lib（firebase/functions/storage） |
+| app/providers | AuthProvider, MasterDataProvider, AppProvider |
+| Cloud Functions | CF-01 analyzeRecipeImage / CF-02 suggestMeals / CF-03 spinGacha |
+| Firestore | users/{uid}（recipes, confirmedMenuItems サブコレクション）, characterDialogues, gachaConfig, difficultyMaster, rarityMaster |
+| Security Rules | Firestore Security Rules / Cloud Storage Security Rules |
+| マスターデータ | characterDialogues, difficultyMaster, rarityMaster, gachaConfig の投入（seed） |
+| Firebase基盤 | プロジェクト設定, Authentication, Hosting |
 
 ---
 
-## 実行チェックリスト
+## 実行チェックリスト（Part 2で実行）
 
-- [x] Step 1: ユニット分解質問への回答収集
+- [x] Step 1: ユニット分解質問への回答収集（本計画のQ1〜Q7）
 - [x] Step 2: unit-of-work.md 生成（ユニット定義・責務・コード構成）
 - [x] Step 3: unit-of-work-dependency.md 生成（依存関係マトリクス）
 - [x] Step 4: unit-of-work-story-map.md 生成（ストーリーマッピング）
-- [x] Step 5: 整合性検証
+- [x] Step 5: 整合性検証（全ストーリー割り当て・依存整合）
 
 ---
 
 ## 質問
 
-### 質問 1: ユニットの実装順序
+以下の質問に `[Answer]:` タグの後にご回答ください。
 
-4ユニットの実装順序はどうしますか？依存関係から推奨順序を提案します。
+### Question 1: ユニット分解の基本戦略
 
-**推奨**: Unit 1（料理管理）→ Unit 2（献立提案）→ Unit 3（ガチャ）→ Unit 4（AIキャラクター）
+Firebaseはフロントエンド中心・薄いバックエンドのため、分解方針を決めます。
 
-理由:
-- Unit 2・3 は Unit 1（料理管理API）に依存する
-- Unit 3 は Unit 2（確定済み献立API）にも依存する
-- Unit 4 は他ユニットから呼ばれる側だが、マスターデータ投入が必要
+A) **レイヤー水平分割** — Firebase基盤 / 共有基盤(shared) / 各機能フロントエンド / Cloud Functions を層で分ける
+B) **機能垂直分割（フルスタックスライス）** — 各ユニット = 機能のフロントエンド + 対応Cloud Function + Firestoreルール断片をまとめる
+C) **ハイブリッド** — 基盤系（Firebase設定・shared・Security Rules・マスターseed）は横断ユニット、機能系は機能ごとの垂直ユニット
+D) Other (please describe after [Answer]: tag below)
 
-A) 推奨順序で進める（Unit 1 → 2 → 3 → 4）
-B) Unit 4（AIキャラクター）を先に実装する（マスターデータ準備を先行）
-C) Unit 1 と Unit 4 を並行実装する（依存関係がないため）
-D) その他（[Answer]: タグの後に記述してください）
+[Answer]: C
 
-[Answer]:A
+### Question 2: Firebase基盤ユニットの扱い
 
----
+プロジェクト設定・Firebase Authentication・Firestore/Storage Security Rules・Hosting設定をどう扱いますか？
 
-### 質問 2: 認証（BE-05）の扱い
+A) 独立した「Firebase基盤ユニット」にまとめ、最初に実装する
+B) 各機能ユニットに分散させる（Security Rulesは関連コレクションを持つユニットが担当）
+C) Other (please describe after [Answer]: tag below)
 
-認証（BE-05: AuthLambda + Cognito）は独立ユニットにしますか？
+[Answer]: A
 
-A) 独立ユニットにしない（Unit 1 の前提条件として最初に実装する）
-B) Unit 0: 認証基盤 として独立ユニットにする
-C) その他（[Answer]: タグの後に記述してください）
+### Question 3: 共有基盤（shared）の扱い
 
-[Answer]:B
+汎用Firestoreプリミティブ（useCollection/useDocument）、useMasterData、UI Element、lib（firebase/functions/storage）、providersをどう扱いますか？
 
----
+A) 独立した「共有基盤ユニット」として先行実装（他ユニットの前提）
+B) 各機能ユニットで必要になったタイミングで作成（重複が出たらsharedへ移動）
+C) Other (please describe after [Answer]: tag below)
 
-### 質問 3: フロントエンドの分割方針
+[Answer]: A
 
-フロントエンドの各 feature は対応するバックエンドユニットと一緒に実装しますか？
+### Question 4: Cloud Functions（CF-01/02/03）の所属
 
-A) はい、各ユニットにフロントエンド（feature）+ バックエンド（Lambda）をセットで含める
-B) フロントエンドは別ユニットとして分離する（バックエンドAPI完成後にまとめて実装）
-C) その他（[Answer]: タグの後に記述してください）
+3つのCloud Functionsをどう配置しますか？
 
-[Answer]:B
+A) 各機能ユニットに含める（CF-01→料理管理、CF-02→献立提案、CF-03→ガチャ）
+B) 独立した「Cloud Functionsユニット」に3種まとめる
+C) Other (please describe after [Answer]: tag below)
 
----
+[Answer]: B
 
-### 質問 4: shared/ コンポーネントの実装タイミング
+### Question 5: マスターデータ投入（seed）の所属
 
-shared/ 配下の共通コンポーネント（CharacterBottomSheet / BottomNavigation / ui/ / AuthContext / ConfirmedMenuItemContext）はいつ実装しますか？
+characterDialogues / difficultyMaster / rarityMaster / gachaConfig の投入スクリプトをどのユニットが持ちますか？
 
-A) Unit 1 の実装時に必要なものから順次作成する
-B) 全ユニットの前に shared/ を先行実装する
-C) 各ユニットで必要になったタイミングで作成する（重複が出たら shared/ に移動）
-D) その他（[Answer]: タグの後に記述してください）
+A) Firebase基盤ユニット（または共有基盤）が一括で持つ
+B) 各データを使うユニットが個別に持つ（dialogues→キャラクター、gachaConfig→ガチャ、difficulty/rarity→基盤）
+C) Other (please describe after [Answer]: tag below)
 
-[Answer]:C
+[Answer]: C（別フォルダでインストレーションガイドなどと一緒に管理）
 
----
+#### Question 5a（フォローアップ）: seed/セットアップの「所属ユニット」
 
-### 質問 5: コード構成（ディレクトリ構造）
+Q5で「別フォルダで管理」とのことでした。フォルダ配置（例: `setup/` にseedスクリプト + SETUP.md）は理解しました。ユニット分解上、この成果物の**所属**をどう扱いますか？
 
-Greenfield プロジェクトのコード構成はどうしますか？
+A) **独立した「セットアップ／マスターデータ ユニット」** として扱う（seed投入スクリプト + インストレーションガイド + 全マスターデータJSONを一括所有）。Firebase基盤ユニットの直後に実装
+B) Firebase基盤ユニットの責務に含める（基盤ユニットが `setup/` フォルダごと所有）
+C) Other (please describe after [Answer]: tag below)
 
-A) モノレポ（1リポジトリに全ユニットのコードを配置）
+[Answer]: A
+
+### Question 6: 実装順序
+
+ユニットの実装順序の希望は？（依存関係から基盤→共有→機能の順を推奨）
+
+A) 推奨順（Firebase基盤 → 共有基盤 → 料理管理 → 献立提案 → ガチャ → AIキャラクター）
+B) 機能を優先（最小機能を縦に早く動かす）
+C) Other (please describe after [Answer]: tag below)
+
+[Answer]: A
+
+### Question 7: コード構成（ディレクトリ構造）
+
+Greenfieldプロジェクトのコード構成は？
+
+A) モノレポ（推奨）
 ```
 /
-├── frontend/          ← React アプリ（全 feature）
-├── backend/
-│   ├── recipe/        ← Unit 1: BE-01
-│   ├── suggestion/    ← Unit 2: BE-02
-│   ├── gacha/         ← Unit 3: BE-03
-│   ├── character/     ← Unit 4: BE-04
-│   └── auth/          ← BE-05
-└── infra/             ← IaC（CDK / SAM / Terraform）
+├── src/                  ← React アプリ（app / features / shared / assets）
+├── functions/            ← Cloud Functions（CF-01/02/03）
+├── firestore.rules       ← Firestore Security Rules
+├── storage.rules         ← Cloud Storage Security Rules
+├── firestore.indexes.json
+├── scripts/seed/         ← マスターデータ投入スクリプト
+├── firebase.json         ← Firebase設定
+└── aidlc-docs/           ← ドキュメント（コードではない）
 ```
+B) フロントエンドとfunctionsを別リポジトリに分離
+C) Other (please describe after [Answer]: tag below)
 
-B) フロントエンド・バックエンド分離リポジトリ
-C) ユニットごとに独立リポジトリ
-D) その他（[Answer]: タグの後に記述してください）
-
-[Answer]:A
+[Answer]: A（すでにフォルダ構成は決定している認識だが？）
 
 ---
 
-*すべての質問に回答したら「完了」とお知らせください。*
+*すべての質問に回答したら「回答しました」とお知らせください。*

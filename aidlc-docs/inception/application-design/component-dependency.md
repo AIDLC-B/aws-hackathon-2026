@@ -4,17 +4,23 @@
 
 | コンポーネント | 依存先 | 通信方式 |
 |---|---|---|
-| features/auth | Firebase Auth, Firestore (users) | Firebase SDK直接 |
-| features/onboarding | features/recipe (useRecipes), features/character | Firestore直接 |
-| features/recipe | Firestore (users/{uid}/recipes), Cloud Storage | Firebase SDK直接 |
-| features/suggestion | CF-02 (suggestMeals), features/confirmedMenu, features/character | Cloud Functions Callable |
-| features/gacha | CF-03 (spinGacha), features/confirmedMenu, features/character | Cloud Functions Callable |
-| features/confirmedMenu | Firestore (users/{uid}/confirmedMenuItems), features/character | Firebase SDK直接 |
-| features/character | Firestore (characterDialogues), AuthContext (isPremium) | Firebase SDK直接 |
-| features/settings | Firestore (users/{uid}), AuthContext | Firebase SDK直接 |
+| shared/hooks (useCollection, useDocument) | Firestore SDK | Firebase SDK直接（汎用プリミティブ・SDK依存の集約点） |
+| app/providers (MasterDataProvider) | shared/hooks (getOnce: difficultyMaster, rarityMaster) | 層1プリミティブ経由（起動時1回・Contextでキャッシュ） |
+| features/auth | Firebase Auth, shared/hooks (useDocument: users) | Firebase Auth SDK / 層1プリミティブ経由 |
+| features/onboarding | features/recipe (useRecipes), shared/hooks (useCollection/useDocument), features/character | 層1プリミティブ経由 |
+| features/recipe | shared/hooks (useCollection: users/{uid}/recipes), Cloud Storage (recipe-images/{uid}), CF-01 | 層1プリミティブ経由 / Storage SDK直接 / Cloud Functions Callable |
+| features/suggestion | CF-02 (suggestMeals), shared/hooks (useCollection: confirmedMenuItems), features/character | Cloud Functions Callable / 層1プリミティブ経由 |
+| features/gacha | CF-03 (spinGacha), shared/hooks (useCollection: confirmedMenuItems), features/character | Cloud Functions Callable / 層1プリミティブ経由 |
+| features/confirmedMenu | shared/hooks (useCollection: users/{uid}/confirmedMenuItems), features/character | 層1プリミティブ経由 |
+| features/character | shared/hooks (useCollection: characterDialogues), AuthContext (isPremium) | 層1プリミティブ経由 |
+| features/settings | shared/hooks (useDocument: users/{uid}), AuthContext | 層1プリミティブ経由 |
 | CF-01 (analyzeRecipeImage) | Claude API, Firebase Secret Manager | HTTPS |
 | CF-02 (suggestMeals) | Firestore (users/{uid}/recipes, confirmedMenuItems) | Admin SDK |
 | CF-03 (spinGacha) | Firestore (users/{uid}/recipes, confirmedMenuItems, gachaConfig) | Admin SDK |
+
+> **注**: ドメイン固有hooks（層2）はFirestore SDKを直接呼ばず、必ず shared/hooks の汎用プリミティブ（層1）を経由する。Cloud Storage SDKおよびCloud Functions Callableは各featureから直接利用する。
+>
+> **マスター参照**: difficulty/rarityのラベル・表示順が必要なコンポーネント（recipe, suggestion, gacha, confirmedMenu）は `useMasterData()` でMasterDataProviderのキャッシュを参照する（個別のFirestore読み取りは発生しない）。
 
 ---
 
@@ -22,9 +28,9 @@
 
 ### 料理登録フロー
 ```
-[ユーザー] → [RecipeForm] → [Cloud Storage] (画像アップロード)
+[ユーザー] → [RecipeForm] → [Cloud Storage: recipe-images/{uid}] (画像を直接アップロード・Storage Rules保護)
                           → [CF-01] → [Claude API] (画像認識)
-                          → [Firestore: users/{uid}/recipes] (レシピ保存)
+                          → [Firestore: users/{uid}/recipes] (レシピ保存・imageUrl含む)
                           → [useCharacterDialogue] → [Firestore: characterDialogues] (一言取得)
                           → [CharacterBottomSheet] (表示)
 ```
@@ -92,6 +98,12 @@ characterDialogues/{dialogueId}      (マスターデータ・全ユーザー共
 
 gachaConfig/{configId}               (マスターデータ・管理者設定)
     │ rarity で検索
+
+difficultyMaster/{difficultyId}      (マスターデータ・全ユーザー共有・起動時取得)
+    │ recipes.difficulty が id を参照
+
+rarityMaster/{rarityId}              (マスターデータ・全ユーザー共有・起動時取得)
+    │ recipes.rarity が id を参照（確率は gachaConfig が保持）
 ```
 
 ### 非正規化の方針
@@ -127,6 +139,7 @@ gachaConfig/{configId}               (マスターデータ・管理者設定)
 |  ┌──────────────────────────────────────────────┐ |
 |  │ Firebase Auth Token                          │ |
 |  │ → Firestore Security Rules で認可            │ |
+|  │ → Cloud Storage Security Rules で認可        │ |
 |  │ → Cloud Functions Callable で自動検証        │ |
 |  └──────────────────────────────────────────────┘ |
 +--------------------------------------------------+
@@ -140,6 +153,12 @@ gachaConfig/{configId}               (マスターデータ・管理者設定)
 |  │ → ユーザーは自分のサブコレクションのみアクセス可│ |
 |  │ → マスターデータは読み取り専用                 │ |
 |  │ → 管理者のみマスターデータ書き込み可           │ |
+|  └──────────────────────────────────────────────┘ |
+|  ┌──────────────────────────────────────────────┐ |
+|  │ Cloud Storage Security Rules                 │ |
+|  │ → recipe-images/{uid}/ は本人のみ読み書き可  │ |
+|  │ → 書き込みは image/* かつ 5MB以下に制限       │ |
+|  │ → 定義外パスはすべて拒否                       │ |
 |  └──────────────────────────────────────────────┘ |
 |  ┌──────────────────────────────────────────────┐ |
 |  │ Cloud Functions                              │ |

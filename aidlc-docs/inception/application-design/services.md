@@ -25,9 +25,10 @@
 
 ## ドメイン間通信パターン
 
-### パターン1: フロントエンド → Firestore 直接操作
-- **対象**: レシピCRUD、確定済み献立CRUD、ユーザープロフィール、設定
-- **認可**: Firestore Security Rules で制御
+### パターン1: フロントエンド → Firestore / Cloud Storage 直接操作
+- **対象**: レシピCRUD、確定済み献立CRUD、ユーザープロフィール、設定、料理写真のアップロード・読み取り
+- **2層構造**: ドメイン固有hooks（層2）→ 汎用Firestoreプリミティブ `useCollection`/`useDocument`（層1・shared）→ Firestore SDK。SDK直接依存は層1に集約
+- **認可**: Firestore Security Rules / Cloud Storage Security Rules で制御
 - **特徴**: Cloud Functionsを経由しないため、呼び出し回数を消費しない
 
 ### パターン2: フロントエンド → Cloud Functions → Firestore
@@ -47,22 +48,25 @@
 ### 料理登録フロー
 ```
 1. ユーザーが写真を撮影/選択
-2. Cloud Storage に画像アップロード（フロントエンドから直接）
-3. CF-01 (analyzeRecipeImage) を呼び出し → Claude API で認識
-4. 認識結果をフロントエンドに返却
-5. ユーザーが確認・修正
-6. フロントエンドから Firestore に直接書き込み
+2. フロントエンドで画像圧縮（最大1MB）
+3. Cloud Storage に画像を直接アップロード（Firebase SDK・Storage Security Rules保護）
+   → recipe-images/{uid}/{recipeId}.jpg
+4. ダウンロードURLを取得
+5. CF-01 (analyzeRecipeImage) を呼び出し → Claude API で認識
+6. 認識結果をフロントエンドに返却
+7. ユーザーが確認・修正
+8. フロントエンドから Firestore に直接書き込み（imageUrl を含む）
    → users/{uid}/recipes/{recipeId}
 ```
 
 ### 献立提案フロー
 ```
-1. ユーザーがフィルタリング条件を選択
+1. ユーザーがフィルタリング条件を選択（difficulty / duration[分・number]。moodは現状未使用）
 2. CF-02 (suggestMeals) を呼び出し
 3. CF-02 内部:
    a. users/{uid}/recipes を取得
    b. users/{uid}/confirmedMenuItems を取得（除外用）
-   c. フィルタリング実行
+   c. difficulty / duration でフィルタリング実行（mood は無視・将来拡張用）
    d. ランダム3品選択
 4. 結果をフロントエンドに返却
 5. ユーザーが「これにする！」で確定
@@ -77,7 +81,7 @@
 3. CF-03 内部:
    a. users/{uid}/recipes を取得
    b. users/{uid}/confirmedMenuItems を取得（除外用）
-   c. gachaConfig から確率設定を取得
+   c. gachaConfig から確率設定を取得（デフォルト値: N=60%, R=25%, SR=12%, SSR=3%）
    d. レアリティ抽選実行
    e. 該当レアリティのレシピからランダム選択
 4. 結果をフロントエンドに返却
@@ -173,3 +177,26 @@ type FromType =
 - **Firestoreに格納**: `characterDialogues` コレクションにマスターデータとして保存
 - **実行時のAPI呼び出しなし**: フロントエンドからFirestoreを直接読み取り（Cloud Functions不要）
 - **コスト**: Firestore読み取りのみ（Claude API呼び出しは事前生成時のみ）
+
+---
+
+## マスターデータ管理方針（difficulty / rarity）
+
+### マスター化の判定基準
+- **マスター化する**: 付随属性（ラベル・表示順・色・確率など）を持つ／表示・計算で参照される／将来変更し得る値
+- **コードのまま残す**: 付随属性を持たない純粋な制御フロー/分類用enum（TypeScript union型で型安全に保持）
+
+### 対象の整理
+| 値 | 扱い | 保存場所 |
+|---|---|---|
+| `difficulty` (easy/normal/hard) | マスター化 | Firestore `difficultyMaster`（id, label, order） |
+| `rarity` (N/R/SR/SSR) | マスター化（表示属性） | Firestore `rarityMaster`（id, label, order）／確率は `gachaConfig` |
+| `tone` / `trigger` / `from` / `source` | コードのまま | TypeScript union型 |
+| `characterId` | コードのまま（今回マスター化しない） | TypeScript union型 + 静的アセット |
+
+### 取得・キャッシュ戦略
+- **MasterDataProvider**: アプリ起動時に `difficultyMaster` / `rarityMaster` を1回ずつ取得（getOnce）し、React Context経由でアプリ全体へ提供
+- **セッション内キャッシュ**: 同一セッション中は再取得しない（Firestore読み取り回数を最小化）
+- **参照方法**: 各コンポーネントは `useMasterData()` でラベル・表示順を取得。recipes/confirmedMenuItems には識別子（id文字列）のみ保存
+- **コスト**: 起動時の数回の読み取りのみ。マスターは小規模かつ低頻度更新のため無料枠への影響は軽微
+- **整合性**: rarityの確率（gachaConfig）と表示属性（rarityMaster）は分離管理。idを共通キーとして対応
