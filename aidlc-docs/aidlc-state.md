@@ -107,5 +107,5 @@
 - [ ] Operations - PLACEHOLDER
 
 ## 次回セッションの再開ポイント
-- **再開アクション**: Unit 7（献立ガチャ）の Code Generation 承認 → 承認後 Unit 8（AIキャラクター）へ。または変更依頼対応
-- **参照ファイル**: `aidlc-docs/construction/unit7-gacha/code/code-summary.md`（生成内容）, `apps/web/src/features/gacha`（実装）, `aidlc-docs/construction/plans/unit7-gacha-code-generation-plan.md`（計画）
+- **再開アクション**: Unit 8（AIキャラクター）の着手（ステージ要否評価 → Code Generation）。ユーザー指示により現在は着手前で停止中
+- **参照ファイル**: `aidlc-docs/construction/unit7-gacha/code/code-summary.md`（Unit 7生成内容）, `apps/web/src/features/gacha`（実装）, `apps/web/src/features/character`（Unit 8で差替対象のスタブ: useCharacterDialogue・CharacterBottomSheet・CharacterInline）
