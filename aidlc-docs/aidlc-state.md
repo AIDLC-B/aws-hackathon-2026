@@ -4,8 +4,8 @@
 - **Project Name**: DAMESI（ダメシ）
 - **Project Type**: Greenfield
 - **Start Date**: 2026-05-03T00:00:00Z
-- **Last Updated**: 2026-06-27T03:30:00Z
-- **Current Stage**: CONSTRUCTION PHASE - Per-Unit Loop (Unit 6: 献立提案・Code Generation完了・承認待ち)
+- **Last Updated**: 2026-06-27T04:10:00Z
+- **Current Stage**: CONSTRUCTION PHASE - Per-Unit Loop (Unit 7: 献立ガチャ・Code Generation完了・承認待ち)
 
 ## リポジトリ構成（2026-06-27 monorepo化）
 - **形態**: npm workspaces（`workspaces: ["apps/*"]`）
@@ -90,9 +90,16 @@
 - [-] NFR Requirements - SKIPPED（新規NFRなし）
 - [-] NFR Design - SKIPPED（連動）
 - [-] Infrastructure Design - SKIPPED（Firestore/CF定義済み）
-- [x] Code Generation - COMPLETED（2026-06-27T03:30:00Z / features/suggestion・features/confirmedMenu・CharacterInlineスタブ・ホームディスパッチ・ガチャ誘導プレースホルダ・ConfirmedMenuItemスナップショット化・web新規4テスト含む64 pass）・承認待ち
+- [x] Code Generation - COMPLETED & APPROVED（2026-06-27T03:40:00Z / features/suggestion・features/confirmedMenu・CharacterInlineスタブ・ホームディスパッチ・ガチャ誘導プレースホルダ・ConfirmedMenuItemスナップショット化・web新規4テスト含む64 pass）
 
-#### Unit 7〜8 - 未着手
+#### Unit 7: ガチャ ✅ 完了
+- [-] Functional Design - SKIPPED（抽選CF-03・確率gachaConfigはUnit 4で確定）
+- [-] NFR Requirements - SKIPPED（新規NFRなし）
+- [-] NFR Design - SKIPPED（連動）
+- [-] Infrastructure Design - SKIPPED（Firestore/CF定義済み）
+- [x] Code Generation - COMPLETED（2026-06-27T04:10:00Z / features/gacha[useGacha・GachaSpinner・GachaResult・RerollLimitScreen・GachaPage]・useConfirmedMenu.clearAll追加・/gacha実体化・リセマラsessionStorage・10連add/replace・web新規4テスト含む83 pass）・承認待ち
+
+#### Unit 8 - 未着手
 
 - [ ] Build and Test - EXECUTE（全ユニット完了後）
 
@@ -100,5 +107,5 @@
 - [ ] Operations - PLACEHOLDER
 
 ## 次回セッションの再開ポイント
-- **再開アクション**: Unit 6（献立提案）の Code Generation 承認 → 承認後 Unit 7（ガチャ）へ。または変更依頼対応
-- **参照ファイル**: `aidlc-docs/construction/unit6-meal-suggestion/code/code-summary.md`（生成内容）, `apps/web/src/features/suggestion` / `apps/web/src/features/confirmedMenu`（実装）, `aidlc-docs/construction/plans/unit6-meal-suggestion-code-generation-plan.md`（計画）
+- **再開アクション**: Unit 7（献立ガチャ）の Code Generation 承認 → 承認後 Unit 8（AIキャラクター）へ。または変更依頼対応
+- **参照ファイル**: `aidlc-docs/construction/unit7-gacha/code/code-summary.md`（生成内容）, `apps/web/src/features/gacha`（実装）, `aidlc-docs/construction/plans/unit7-gacha-code-generation-plan.md`（計画）

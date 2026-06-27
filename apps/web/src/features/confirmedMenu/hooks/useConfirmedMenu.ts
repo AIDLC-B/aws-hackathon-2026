@@ -53,6 +53,17 @@ export function useConfirmedMenu() {
     return getCollectionOnce<ConfirmedMenuItem>(path);
   }
 
+  /**
+   * 確定済み献立を全件削除する（Unit 7・10連ガチャ「入れ替え」用）。
+   * 現在の購読データの各ドキュメントを remove する。
+   */
+  async function clearAll(): Promise<void> {
+    const current = await getConfirmedMenuItems();
+    await Promise.all(
+      current.map((item) => removeDocument(`${path}/${item.id}`)),
+    );
+  }
+
   return {
     items,
     loading,
@@ -62,5 +73,6 @@ export function useConfirmedMenu() {
     confirm,
     completeMenuItem,
     getConfirmedMenuItems,
+    clearAll,
   };
 }

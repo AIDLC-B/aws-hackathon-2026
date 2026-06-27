@@ -89,4 +89,14 @@ describe("useConfirmedMenu", () => {
     expect(items).toEqual([{ id: "x" }]);
     expect(getCollectionOnceMock).toHaveBeenCalledWith(PATH);
   });
+
+  it("clearAll は全ドキュメントを remove する（10連入れ替え用）", async () => {
+    getCollectionOnceMock.mockResolvedValue([{ id: "a" }, { id: "b" }]);
+    removeDocumentMock.mockResolvedValue(undefined);
+    const { result } = renderHook(() => useConfirmedMenu());
+    await result.current.clearAll();
+    expect(removeDocumentMock).toHaveBeenCalledWith(`${PATH}/a`);
+    expect(removeDocumentMock).toHaveBeenCalledWith(`${PATH}/b`);
+    expect(removeDocumentMock).toHaveBeenCalledTimes(2);
+  });
 });

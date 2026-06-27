@@ -1120,3 +1120,27 @@
 **Context**: CONSTRUCTION - Unit 6 Code Generation 完了・承認待ち
 
 ---
+
+## Unit 6: 献立提案 - 承認 → Unit 7 開始
+**Timestamp**: 2026-06-27T03:40:00Z
+**User Input**: "OK。進めて"
+**AI Response**: Unit 6 Code Generation を承認として記録（aidlc-state更新）。Unit 7（ガチャ）へ移行。ステージ要否評価を行い、Code Generation Part 1（計画＋質問）を作成する。
+**Context**: CONSTRUCTION - Unit 6 完了・承認 → Unit 7 開始
+
+## Unit 7: 献立ガチャ - ステージ要否評価・Code Generation Part 1（計画）
+**Timestamp**: 2026-06-27T03:45:00Z
+**User Input**: （Unit 6承認後の自動遷移）
+**AI Response**: Unit 7のステージ要否評価（設計4ステージSKIP・Code Generation EXECUTE）。stories（US-10/11/12）・component-methods・components.md・CF-03実装を確認。Code Generation Part 1として計画ファイル（unit7-gacha-code-generation-plan.md）を作成し質問5件を提示。論点: リセマラカウントのセッション管理方式・デリバリー誘導リンク・ガチャ演出範囲・10連の追加/入れ替え+clearAll・ルーティング/確定後遷移とテスト範囲。
+**Context**: CONSTRUCTION - Unit 7 Code Generation Part 1（計画）— 質問提示・承認待ち
+
+## Unit 7: 献立ガチャ - Q4説明 → 全回答確定 → Part 2 生成開始
+**Timestamp**: 2026-06-27T03:55:00Z
+**User Input**: "完了。Q4については疑問点があるので、回答をお願い" → （add/削除/入れ替えの仕組みを説明）→ "AでOK"
+**AI Response**: confirmedMenuItemsコレクションに対するadd（追加）/clearAll（全削除）/replace（全削除+10件追加）の仕組みと、US-12の10連確定フロー（既存0件→即追加、1件以上→追加/入れ替えダイアログ）を説明。Q4=Aで確定。全回答: Q1=A（sessionStorage）/Q2=A（DELIVERY_URL定数）/Q3=A（CSS簡易演出・可能な限り良く）/Q4=A（add+replace+clearAll）/Q5=A（GachaPage実体化+HomePage委譲+ロジック/軽い描画テスト）。Code Generation Part 2を開始。
+**Context**: CONSTRUCTION - Unit 7 Code Generation Part 2（生成）— 開始
+
+## Unit 7: 献立ガチャ - Code Generation Part 2 生成完了
+**Timestamp**: 2026-06-27T04:10:00Z
+**User Input**: （Part 1全回答確定後の生成実行）
+**AI Response**: 全11ステップ実行。useConfirmedMenuにclearAll追加。生成: features/gacha（config[REROLL_LIMIT/DELIVERY_URL]・useGacha[CF-03・sessionStorageリセマラ・add/replace確定]・GachaSpinner[CSS演出]・GachaResult[N/R/SR/SSRバッジ]・RerollLimitScreen[堕落ルート]・GachaPage[フェーズ管理・10連モードダイアログ]）。routes.tsx の/gachaをGachaPage実体化。テスト4ファイル追加+useConfirmedMenu.testにclearAll追加。検証: typecheck（web+functions）成功、build成功、vitest（rules除く）18ファイル83 pass、get_diagnosticsクリーン。既知の無関係課題: firestore.rules.test.ts（エミュレータ前提）・useCollection.ts lint既存指摘。code-summary生成・aidlc-state更新。
+**Context**: CONSTRUCTION - Unit 7 Code Generation 完了・承認待ち

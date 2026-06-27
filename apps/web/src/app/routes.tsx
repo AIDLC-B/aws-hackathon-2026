@@ -17,6 +17,7 @@ import { RecipeDetailPage } from "@/features/recipe/pages/RecipeDetailPage";
 import { RecipeEditPage } from "@/features/recipe/pages/RecipeEditPage";
 import { FilteringPage } from "@/features/suggestion/pages/FilteringPage";
 import { ConfirmedMenuDetailPage } from "@/features/confirmedMenu/pages/ConfirmedMenuDetailPage";
+import { GachaPage } from "@/features/gacha/pages/GachaPage";
 
 /** ローディング表示（UP-1 ローディングゲート） */
 function LoadingScreen() {
@@ -31,15 +32,6 @@ function LoadingScreen() {
       }}
     >
       読み込み中...
-    </div>
-  );
-}
-
-/** Unit 7 で実装予定のガチャ画面プレースホルダ（Q4・ナビ成立用） */
-function GachaPlaceholder() {
-  return (
-    <div data-testid="gacha-page" style={{ padding: 16 }}>
-      ガチャ（Unit 7で実装）
     </div>
   );
 }
@@ -161,12 +153,12 @@ export function AppRoutes() {
           }
         />
 
-        {/* ガチャ（Unit 7・プレースホルダ） */}
+        {/* ガチャ（Unit 7） */}
         <Route
           path="/gacha"
           element={
             <RequireAuth>
-              <GachaPlaceholder />
+              <GachaPage />
             </RequireAuth>
           }
         />
