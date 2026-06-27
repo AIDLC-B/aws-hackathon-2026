@@ -188,21 +188,28 @@ service firebase.storage {
 
 ## フロントエンド FSD ディレクトリ構造
 
+> **モノレポ構成（2026-06-27確定）**: リポジトリはnpm workspaces（`apps/*`）。フロントは `apps/web`、共通型は `apps/shared`、backendは `apps/functions`、seedは `apps/seed`。フロント/Functions共通の型は中立 `apps/shared/types` が単一ソースで、`apps/web/src/shared/types` は `@shared/types` から再エクスポート（+フロント専用UI型）、`apps/functions/src/types.ts` も同じ中立を再エクスポートする。
+
 ```
-src/
-├── app/                    # アプリ初期化・ルーティング・プロバイダー
-├── features/               # 機能別モジュール（8ドメイン）
-│   ├── auth/               # 認証
-│   ├── onboarding/         # オンボーディング
-│   ├── recipe/             # 料理管理（FR-01）
-│   ├── suggestion/         # 献立提案（FR-02）
-│   ├── gacha/              # ガチャ（FR-05）
-│   ├── confirmedMenu/      # 確定済み献立
-│   ├── character/          # AIキャラクター（FR-03）
-│   └── settings/           # 設定
-├── shared/                 # 共有（UI Element, hooks, lib, types）
-│   └── hooks/              # 汎用Firestoreプリミティブ（useCollection, useDocument）
-└── assets/                 # 静的アセット（キャラクター画像, ガチャ画像）
+apps/
+├── shared/types/               # ★中立・型の単一ソース（フロント/Functions共通）
+├── web/                        # @damesi/web（Viteフロント）
+│   └── src/
+│       ├── app/                # アプリ初期化・ルーティング・プロバイダー
+│       ├── features/           # 機能別モジュール（8ドメイン）
+│       │   ├── auth/           # 認証
+│       │   ├── onboarding/     # オンボーディング
+│       │   ├── recipe/         # 料理管理（FR-01）
+│       │   ├── suggestion/     # 献立提案（FR-02）
+│       │   ├── gacha/          # ガチャ（FR-05）
+│       │   ├── confirmedMenu/  # 確定済み献立
+│       │   ├── character/      # AIキャラクター（FR-03）
+│       │   └── settings/       # 設定
+│       ├── shared/             # 共有（UI Element, hooks, lib, types[=apps/shared再エクスポート+UI型]）
+│       │   └── hooks/          # 汎用Firestoreプリミティブ（useCollection, useDocument）
+│       └── assets/             # 静的アセット（キャラクター画像, ガチャ画像）
+├── functions/                  # @damesi/functions（Cloud Functions）
+└── seed/                       # @damesi/seed（マスターデータ投入）
 ```
 
 ---

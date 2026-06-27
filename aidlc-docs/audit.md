@@ -1005,3 +1005,84 @@
 **Context**: CONSTRUCTION - Unit 3 Code Generation Part 2 完了。承認待ち。
 
 ---
+
+
+---
+
+## Unit 3: 共有基盤 - Code Generation 承認
+**Timestamp**: 2026-06-27T00:00:00Z
+**User Input**: "OK.進めて"
+**AI Response**: Unit 3（共有基盤）の Code Generation を承認として記録。aidlc-state.md を更新。Unit 4（Cloud Functions基盤）へ移行。
+**Context**: CONSTRUCTION - Unit 3 完了 → Unit 4 開始
+
+---
+
+---
+
+## Unit 4: Cloud Functions - ステージ要否評価・Code Generation Part 1 開始
+**Timestamp**: 2026-06-27T00:05:00Z
+**User Input**: "承認します。"
+**AI Response**: Unit 4のステージ要否評価を実施（Functional/NFR Requirements/NFR Design/Infrastructure DesignをSKIP、Code GenerationをEXECUTE）。Code Generation Part 1として `aidlc-docs/construction/plans/unit4-cloud-functions-code-generation-plan.md` を作成。5つの質問（Recipeサーバー型定義方法・Claude APIクライアント実装方式・gachaConfigフォールバック・テスト/PBT範囲・抽選時在庫不足の挙動）を提示。ユーザーの回答待ち。
+**Context**: CONSTRUCTION - Unit 4 Code Generation Part 1（計画）— 質問提示
+
+---
+
+---
+
+## Unit 4: Cloud Functions - Code Generation Part 1回答受信・Part 2生成完了
+**Timestamp**: 2026-06-27T00:30:00Z
+**User Input**: "回答しました。"（Q1: Bでもいい気がするが理由を質問 / Q2: A採用＋他AIモデル(OpenAI)切替をenvで可能に＋懸念点共有依頼 / Q3: A＋一度取得したらキャッシュ / Q4: B / Q5: A）
+**AI Response**: Q1にはクライアントSDK/Admin SDKのTimestamp非互換とデプロイバンドル境界の2点を理由にA採用を説明。回答を計画に反映し全10ステップを実行。生成: `functions/`（package.json/tsconfig/vitest.config/.gitignore）、`src/types.ts`、`src/lib/`（admin/auth/gachaConfig[キャッシュ]/gachaLogic/suggestLogic/llm[types/index/parse/image/anthropic/openai/mock]）、CF-01/02/03、index.ts、テスト5ファイル48件。`.env.example`にLLM_PROVIDER等を追記。AIプロバイダ抽象化（anthropic/openai/mock・env切替・Secret Manager）実装。懸念点（Vision入力フォーマット差異・依存増・Secret別管理）を明記。npm run build成功・npm test 48件pass・get_diagnosticsクリーン。code-summary.md生成。
+**Context**: CONSTRUCTION - Unit 4 Code Generation 完了・承認待ち
+
+---
+
+---
+
+## Unit 4: Cloud Functions - 型のshared一本化・中立配置リファクタ
+**Timestamp**: 2026-06-27T01:00:00Z
+**User Input**: "typesについて、sharedを使うように徹底してください。既存の文書についても修正をお願い。" → 続けて "両方で使う型なんだけど、functions, src/sharedにあるのは正しいの？" → "OK。認識相違がないので、修正をお願い。またこれからの作業については適宜説明をしてください。"
+**AI Response**: 型を中立共有基盤へ一本化。(1) Q1の懸念（client/admin Timestamp非互換・デプロイ境界）を、SDK非依存の構造型 `FirestoreTimestamp` + `export type`による型消去で解消。(2) 当初 `src/shared` を借用したが、`src/shared`はフロント専用共有層であり越境だと指摘を受け、どちらにも属さない中立 `/shared/types` を新規作成し真の単一ソースとした。(3) `src/shared/types`は`@shared/types`再エクスポート+フロント専用UI型に再編、`functions/src/types.ts`は`../../shared/types`再エクスポートに変更。(4) ルートtsconfig/vite.configに`@shared`エイリアス追加・include拡張、functions/tsconfigのincludeを`../shared/types`に変更。検証: functions `npm run build`成功・`npm test`48件pass・コンパイル後にshared実行時参照なし、フロント`npm run typecheck`新規エラーなし、get_diagnosticsクリーン。(5) 既存文書を更新: unit4 plan/code-summary（Q1を中立配置に改訂）、unit3 code-summary（Q2=B改訂注記）、unit-of-work.md・application-design.md（モノレポ構成図に`/shared`追加・型単一ソース方針明記）。
+**Context**: CONSTRUCTION - Unit 4 型アーキテクチャ改善（中立共有配置）。Unit 4 Code Generationは引き続き承認待ち。
+
+---
+
+---
+
+## リポジトリ構成リファクタ（monorepo / npm workspaces・apps/*）
+**Timestamp**: 2026-06-27T02:00:00Z
+**User Input**: "functionsとsharedだけど、srcはいかにできない？構成として、shared, functions(backend), (frontend)のような構成にしたい。" → 複数案提示後 "案3でいいと思います。ただ、packagesがイマイチ" → "appsでいこう。開発者間で決めました" → "OK"（フロント=web / seedはapps配下 / @damesiスコープで確定）
+**AI Response**: モノレポ（npm workspaces・案3）へ再構成。コンテナ名は`apps`（packagesは慣習に過ぎず必須でない旨を説明）。実施: (1) `shared`→`apps/shared`、`functions`→`apps/functions`、`src`+index.html+vite/tsconfig/eslint+tests→`apps/web`、`setup`→`apps/seed`（フラット化）。(2) ルート`package.json`新規（workspaces: apps/*・委譲スクリプト）。各パッケージを`@damesi/{shared,web,functions,seed}`に改名。(3) `apps/web`のtsconfig/vite alias `@shared`を`../shared`へ、Vite `envDir`をルートへ。(4) firebase.json: hosting.public=apps/web/dist, functions.source=apps/functions。(5) ルートで`npm install`再構築（560パッケージ・ホイスティング）。(6) 積み残しの型エラー修正（apps/web/tsconfigに`vite/client`追加・rulesテストの未使用import削除）。検証: functions build+48テスト✓、web build✓、webユニット27テスト✓、ルート統合typecheck（web+functions）✓。(7) ドキュメント更新: README/SETUP/unit-of-work.md/application-design.md/unit4 code-summary（apps/*レイアウト・型単一ソース方針）、.gitignoreに`lib/`追加、aidlc-state更新。functionsの`../../shared/types`相対参照は移動後も距離不変で編集不要。
+**Context**: CONSTRUCTION - Unit 4 リポジトリmonorepo化完了。Unit 4 Code Generationは引き続き承認待ち。
+
+---
+
+---
+
+## Unit 4: Cloud Functions - Code Generation 承認
+**Timestamp**: 2026-06-27T02:10:00Z
+**User Input**: "最高。進めて"
+**AI Response**: Unit 4（Cloud Functions）の Code Generation を承認として記録。aidlc-state.md を更新。Unit 5（料理管理）へ移行し、ステージ要否評価を開始。
+**Context**: CONSTRUCTION - Unit 4 完了 → Unit 5 開始
+
+---
+
+---
+
+## Unit 5: 料理管理 - ステージ要否評価・Code Generation Part 1 開始
+**Timestamp**: 2026-06-27T02:20:00Z
+**User Input**: （Unit 4承認後の自動遷移）
+**AI Response**: Unit 5のステージ要否評価（Functional/NFR Requirements/NFR Design/Infrastructure DesignをSKIP・Code GenerationをEXECUTE）。stories（US-00/01/04/14）・ux-design・onboarding-recipe-list・既存shared資産を確認。Code Generation Part 1として `aidlc-docs/construction/plans/unit5-recipe-management-code-generation-plan.md` を作成。5つの質問（キャラ一言のUnit8依存の扱い・写真AI認識のrecipeId連携フロー・ボトムナビ範囲・テスト範囲・頻度ラベル配置）を提示。レアリティ⇔頻度ラベルの別マッピング要件を明記。ユーザーの回答待ち。
+**Context**: CONSTRUCTION - Unit 5 Code Generation Part 1（計画）— 質問提示
+
+---
+
+---
+
+## Unit 5: 料理管理 - Code Generation Part 1回答受信・Part 2生成完了
+**Timestamp**: 2026-06-27T02:40:00Z
+**User Input**: "完了。続けて"（Q1〜Q5すべてA採用）
+**AI Response**: 全11ステップを実行。生成: features/recipe（utils/labels・validation・hooks[useRecipes/useRecipe]・components/RecipeForm・pages[Register/RepertoireList/RecipeDetail/RecipeEdit]）、features/onboarding（data/onboardingRecipes 20件・hooks/useOnboarding・pages/OnboardingPage）、features/character スタブ（useCharacterDialogue・CharacterBottomSheet）、app/AppLayout（ボトムナビ）・routes.tsx 結線。既存資産更新: shared/hooks/useCollection に newDocId 追加（写真フローのID先行採番・Q2）、AuthProvider に refreshProfile 追加（オンボーディング完了後のガード遷移修正・任意フィールドで既存テスト互換）、useAuth が refreshProfile を返却。テスト4ファイル追加。検証: web typecheck/build成功、web全50テストpass、get_diagnosticsクリーン。code-summary生成。README/aidlc-state更新。
+**Context**: CONSTRUCTION - Unit 5 Code Generation 完了・承認待ち
+
+---

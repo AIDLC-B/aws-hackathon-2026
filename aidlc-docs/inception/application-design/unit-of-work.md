@@ -231,62 +231,53 @@
 
 ---
 
-## コード構成（モノレポ）
+## コード構成（モノレポ・npm workspaces）
 
-> フロントエンド `src/` 構成は Application Design で確定済み。本書はリポジトリ最上位を含む全体像を示す。
+> ルートに `package.json`（`workspaces: ["apps/*"]`）を置き、役割別パッケージを `apps/` 配下に並べる。フロントエンド `src/`（FSD）構成は Application Design で確定済み。
 
 ```
 /
-├── src/                           ← React アプリ（Unit 1 auth / Unit 3 shared / Unit 5-8 features）
-│   ├── app/
-│   │   ├── App.tsx
-│   │   ├── routes.tsx             ← Unit 3
-│   │   └── providers/
-│   │       ├── AuthProvider.tsx       ← Unit 1
-│   │       ├── MasterDataProvider.tsx ← Unit 3
-│   │       └── AppProvider.tsx        ← Unit 3
-│   ├── features/
-│   │   ├── auth/                  ← Unit 1
-│   │   ├── onboarding/            ← Unit 5
-│   │   ├── recipe/                ← Unit 5
-│   │   ├── suggestion/            ← Unit 6
-│   │   ├── confirmedMenu/         ← Unit 6
-│   │   ├── gacha/                 ← Unit 7
-│   │   ├── character/             ← Unit 8
-│   │   └── settings/              ← Unit 8
-│   ├── shared/                    ← Unit 3
-│   │   ├── components/ui/
-│   │   ├── hooks/                 ← useCollection, useDocument, useMasterData
-│   │   ├── lib/                   ← firebase, functions, storage
-│   │   └── types/
-│   └── assets/                    ← characters/, gacha/
-│
-├── functions/                     ← Unit 4: Cloud Functions
-│   ├── src/
-│   │   ├── analyzeRecipeImage.ts  ← CF-01
-│   │   ├── suggestMeals.ts        ← CF-02
-│   │   └── spinGacha.ts           ← CF-03
-│   ├── package.json
-│   └── tsconfig.json
-│
-├── setup/                         ← Unit 2: セットアップ／マスターデータ
-│   ├── SETUP.md                   ← インストレーションガイド
-│   └── seed/
+├── package.json                   ← ルート（workspaces: apps/*・スクリプト委譲）
+├── apps/
+│   ├── shared/                    ← @damesi/shared（中立・フロント/Functions共通の型）
+│   │   ├── types/
+│   │   │   └── index.ts           ← ドメイン型/CF契約型/FirestoreTimestamp/union/マスター型
+│   │   └── package.json
+│   │
+│   ├── web/                       ← @damesi/web（React アプリ）
+│   │   ├── index.html
+│   │   ├── vite.config.ts / tsconfig.json / eslint.config.js / package.json
+│   │   ├── src/
+│   │   │   ├── app/               ← App.tsx / routes.tsx(U3) / providers(U1,U3)
+│   │   │   ├── features/          ← auth(U1) onboarding/recipe(U5) suggestion/confirmedMenu(U6) gacha(U7) character/settings(U8)
+│   │   │   ├── shared/            ← Unit 3（components/ui, hooks, lib, types[=apps/shared再エクスポート+UI型]）
+│   │   │   └── assets/            ← characters/, gacha/
+│   │   └── tests/                 ← unit / rules
+│   │
+│   ├── functions/                 ← @damesi/functions（Unit 4: Cloud Functions）
+│   │   ├── src/
+│   │   │   ├── analyzeRecipeImage.ts  ← CF-01
+│   │   │   ├── suggestMeals.ts        ← CF-02
+│   │   │   ├── spinGacha.ts           ← CF-03
+│   │   │   ├── lib/ (admin/auth/gachaConfig/gachaLogic/suggestLogic/llm)
+│   │   │   └── types.ts               ← apps/shared/types を再エクスポート
+│   │   ├── package.json / tsconfig.json / vitest.config.ts
+│   │
+│   └── seed/                      ← @damesi/seed（Unit 2: マスターデータ投入）
+│       ├── SETUP.md               ← インストレーションガイド
 │       ├── seed.ts                ← Admin SDK 投入スクリプト
-│       └── data/
-│           ├── character-dialogues.json
-│           ├── difficulty-master.json
-│           ├── rarity-master.json
-│           └── gacha-config.json
+│       ├── data/                  ← character-dialogues / difficulty-master / rarity-master / gacha-config (.json)
+│       └── package.json / tsconfig.json
 │
-├── firebase.json                  ← Unit 1
-├── firestore.rules                ← Unit 1
-├── storage.rules                  ← Unit 1
-├── firestore.indexes.json         ← Unit 1
-├── package.json                   ← フロントエンド（Vite + React + TS）
-├── tsconfig.json
+├── firebase.json                  ← hosting.public=apps/web/dist, functions.source=apps/functions
+├── firestore.rules / storage.rules / firestore.indexes.json   ← Unit 1（ルート据え置き）
+├── .env / .env.example            ← 環境変数（ルート集約・Viteは envDir でルート参照）
 └── aidlc-docs/                    ← ドキュメント（コードではない）
 ```
+
+> **型の単一ソース方針（2026-06-27確定）**: フロント/Functions の両方で使うドメイン型・CF契約型は、どちらのバウンダリにも属さない中立 `apps/shared/types` で一元管理する。`apps/web/src/shared/types`（フロント・`@shared/*`エイリアス）と `apps/functions/src/types.ts`（Functions・相対 `import type`）はそこを再エクスポート/参照する。型は実行時に消去されるため、`apps/shared` を依存パッケージとして宣言する必要はなく（Firebaseデプロイのバンドル問題を回避）、build/install も不要。SDK非依存の `FirestoreTimestamp` により client/admin 両SDKのTimestampを変換なしで扱える。
+>
+> **ワークスペース運用**: ルートで `npm install` すると全 `apps/*` の依存をホイスティング。ビルド/テスト/型チェックはルートの委譲スクリプト（`npm run build` → web、`npm run typecheck` → web+functions 等）で実行。
 
 ### テスト方針
 

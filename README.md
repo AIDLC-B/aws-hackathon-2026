@@ -43,21 +43,26 @@ npm run deploy        # firebase deploy（手動）
 ```
 CI/CDは GitHub Actions（`.github/workflows/deploy.yml`）。mainブランチへのmergeで自動デプロイ。
 
-## ディレクトリ構成（モノレポ）
+## ディレクトリ構成（モノレポ・npm workspaces）
 ```
-src/        React アプリ（app / features / shared）
-functions/  Cloud Functions（Unit 4）
-setup/      マスターデータ投入・インストールガイド（Unit 2）
-tests/      テスト（unit / rules）
-firestore.rules / storage.rules / firebase.json
+package.json          ルート（workspaces: apps/*・各種スクリプトを委譲）
+apps/
+├── shared/           @damesi/shared    フロント/Functions共通の型（単一ソース）
+├── web/              @damesi/web        React アプリ（src: app / features / shared, tests）
+├── functions/        @damesi/functions  Cloud Functions（Unit 4）
+└── seed/             @damesi/seed       マスターデータ投入・インストールガイド（Unit 2）
+firestore.rules / storage.rules / firestore.indexes.json / firebase.json
+.env / .env.example   環境変数（リポジトリ直下に集約・Viteは envDir でルート参照）
 ```
+
+> 型の単一ソースは `apps/shared/types`。`apps/web`（`@shared/*` エイリアス）と `apps/functions`（相対 `import type`）が参照する。型は実行時に消去されるため依存パッケージ化は不要。
 
 ## 実装状況
 - [x] Unit 1: Firebase基盤 & 認証（Google認証・Security Rules）
-- [ ] Unit 2: セットアップ／マスターデータ
-- [ ] Unit 3: 共有基盤
-- [ ] Unit 4: Cloud Functions
-- [ ] Unit 5: 料理管理
+- [x] Unit 2: セットアップ／マスターデータ
+- [x] Unit 3: 共有基盤
+- [x] Unit 4: Cloud Functions（CF-01/02/03・LLMプロバイダ抽象化）
+- [x] Unit 5: 料理管理（登録/一覧/詳細/編集・オンボーディング・キャラ一言スタブ）
 - [ ] Unit 6: 献立提案
 - [ ] Unit 7: 献立ガチャ
 - [ ] Unit 8: AIキャラクター

@@ -4,8 +4,17 @@
 - **Project Name**: DAMESI（ダメシ）
 - **Project Type**: Greenfield
 - **Start Date**: 2026-05-03T00:00:00Z
-- **Last Updated**: 2026-06-06T03:15:00Z
-- **Current Stage**: CONSTRUCTION PHASE - Per-Unit Loop (Unit 3: 共有基盤)
+- **Last Updated**: 2026-06-27T02:00:00Z
+- **Current Stage**: CONSTRUCTION PHASE - Per-Unit Loop (Unit 4: Cloud Functions基盤・承認待ち)
+
+## リポジトリ構成（2026-06-27 monorepo化）
+- **形態**: npm workspaces（`workspaces: ["apps/*"]`）
+- **apps/shared**: `@damesi/shared` フロント/Functions共通の型（単一ソース・型のみ）
+- **apps/web**: `@damesi/web` Reactアプリ（旧 src/ + index.html/vite/tsconfig/tests）
+- **apps/functions**: `@damesi/functions` Cloud Functions（旧 functions/）
+- **apps/seed**: `@damesi/seed` マスターデータ投入（旧 setup/）
+- **firebase.json**: hosting.public=apps/web/dist, functions.source=apps/functions
+- **ビルド/テスト**: ルートの委譲スクリプト（`npm run build/typecheck/test/lint`）
 
 ## Workspace State
 - **Existing Code**: No
@@ -55,14 +64,28 @@
 - [-] Infrastructure Design - SKIPPED（共有基盤利用）
 - [x] Code Generation - COMPLETED & APPROVED (2026-06-06T03:15:00Z)
 
-#### Unit 3: 共有基盤（現在）
+#### Unit 3: 共有基盤 ✅ 完了
 - [-] Functional Design - SKIPPED（新規データモデル・複雑業務ロジックなし）
 - [-] NFR Requirements - SKIPPED（新規NFRなし・RulesはUnit 1所有）
 - [-] NFR Design - SKIPPED（連動）
 - [-] Infrastructure Design - SKIPPED（共有インフラはUnit 1で定義済み）
-- [ ] Code Generation - 承認待ち（Part 2完了・プリミティブ/UI/lib/Provider/型/テスト）
+- [x] Code Generation - COMPLETED & APPROVED (2026-06-27T00:00:00Z)
 
-#### Unit 4〜8 - 未着手
+#### Unit 4: Cloud Functions基盤 ✅ 完了
+- [-] Functional Design - SKIPPED（CF入出力・処理フローはApplication Designで確定済み）
+- [-] NFR Requirements - SKIPPED（新規NFRなし・Firebase/Claude APIのNFRはUnit 1で定義）
+- [-] NFR Design - SKIPPED（連動）
+- [-] Infrastructure Design - SKIPPED（FirebaseインフラはUnit 1で定義済み）
+- [x] Code Generation - COMPLETED & APPROVED (2026-06-27T02:10:00Z / CF-01/02/03 + LLM抽象化 + テスト48件pass + monorepo化)
+
+#### Unit 5: 料理管理 ✅ 完了
+- [-] Functional Design - SKIPPED（型・スキーマ・業務ルール確定済み）
+- [-] NFR Requirements - SKIPPED（新規NFRなし）
+- [-] NFR Design - SKIPPED（連動）
+- [-] Infrastructure Design - SKIPPED（Storage/CF/Firestore定義済み）
+- [x] Code Generation - COMPLETED（承認待ち / features/recipe・onboarding・character[スタブ]・ボトムナビ・web全50テストpass）
+
+#### Unit 6〜8 - 未着手
 
 - [ ] Build and Test - EXECUTE（全ユニット完了後）
 
@@ -70,5 +93,5 @@
 - [ ] Operations - PLACEHOLDER
 
 ## 次回セッションの再開ポイント
-- **再開アクション**: Unit 3（共有基盤）の ステージ要否評価 → Code Generation Part 1（計画）承認から
-- **参照ファイル**: `aidlc-docs/inception/application-design/unit-of-work.md`（Unit 3定義）, `components.md` / `component-methods.md`（shared層）
+- **再開アクション**: Unit 4（Cloud Functions基盤）の Code Generation 承認 → 承認後Unit 5（料理管理）へ。または変更依頼対応
+- **参照ファイル**: `aidlc-docs/construction/unit4-cloud-functions/code/code-summary.md`（生成内容）, `functions/`（実装）, `aidlc-docs/construction/plans/unit4-cloud-functions-code-generation-plan.md`（計画）

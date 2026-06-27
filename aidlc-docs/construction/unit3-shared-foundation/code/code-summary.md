@@ -29,6 +29,7 @@
 ## 設計判断（質問回答）
 - **Q1=A**: UI Elementは指定5点（Button/Card/Modal/BottomSheet/LoadingSpinner）
 - **Q2=B**: 共通型はunion型・マスター型・キャラIF型に限定。Recipe/ConfirmedMenuItem等のドメインエンティティ型は各機能ユニット（5/6/7/8）で定義
+  - **【改訂 2026-06-27 / Unit 4にて】**: 本方針は上書き。型のshared一本化（中立配置）に伴い、ドメインエンティティ型（Recipe/RecipeInput/ConfirmedMenuItem）・CF契約型は中立共有基盤 `/shared/types` に集約。`src/shared/types` は中立への再エクスポート+フロント専用UI型に再編。詳細は `aidlc-docs/construction/unit4-cloud-functions/code/code-summary.md` のQ1参照。
 - **Q3=A**: キャラクター一言は型のみ先行定義（実体はUnit 8）
 - **Q4=A**: 単体テストはプリミティブ中心（Firebase SDKモック）
 
