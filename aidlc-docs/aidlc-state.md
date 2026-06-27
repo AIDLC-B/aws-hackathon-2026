@@ -5,7 +5,7 @@
 - **Project Type**: Greenfield
 - **Start Date**: 2026-05-03T00:00:00Z
 - **Last Updated**: 2026-06-27T04:10:00Z
-- **Current Stage**: CONSTRUCTION PHASE - Per-Unit Loop (Unit 7: 献立ガチャ・Code Generation完了・承認待ち)
+- **Current Stage**: CONSTRUCTION PHASE - Per-Unit Loop (Unit 7: 承認済み・Unit 8 着手前で停止中)
 
 ## リポジトリ構成（2026-06-27 monorepo化）
 - **形態**: npm workspaces（`workspaces: ["apps/*"]`）
@@ -97,7 +97,7 @@
 - [-] NFR Requirements - SKIPPED（新規NFRなし）
 - [-] NFR Design - SKIPPED（連動）
 - [-] Infrastructure Design - SKIPPED（Firestore/CF定義済み）
-- [x] Code Generation - COMPLETED（2026-06-27T04:10:00Z / features/gacha[useGacha・GachaSpinner・GachaResult・RerollLimitScreen・GachaPage]・useConfirmedMenu.clearAll追加・/gacha実体化・リセマラsessionStorage・10連add/replace・web新規4テスト含む83 pass）・承認待ち
+- [x] Code Generation - COMPLETED & APPROVED（2026-06-27T04:20:00Z / features/gacha[useGacha・GachaSpinner・GachaResult・RerollLimitScreen・GachaPage]・useConfirmedMenu.clearAll追加・/gacha実体化・リセマラsessionStorage・10連add/replace・web新規4テスト含む83 pass）
 
 #### Unit 8 - 未着手
 
