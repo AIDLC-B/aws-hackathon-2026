@@ -8,12 +8,15 @@ import {
 } from "react-router-dom";
 import { AuthContext } from "@/app/providers/AuthProvider";
 import { AppLayout } from "@/app/AppLayout";
+import { HomePage } from "@/app/HomePage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { OnboardingPage } from "@/features/onboarding/pages/OnboardingPage";
 import { RepertoireListPage } from "@/features/recipe/pages/RepertoireListPage";
 import { RegisterPage } from "@/features/recipe/pages/RegisterPage";
 import { RecipeDetailPage } from "@/features/recipe/pages/RecipeDetailPage";
 import { RecipeEditPage } from "@/features/recipe/pages/RecipeEditPage";
+import { FilteringPage } from "@/features/suggestion/pages/FilteringPage";
+import { ConfirmedMenuDetailPage } from "@/features/confirmedMenu/pages/ConfirmedMenuDetailPage";
 
 /** ローディング表示（UP-1 ローディングゲート） */
 function LoadingScreen() {
@@ -32,9 +35,13 @@ function LoadingScreen() {
   );
 }
 
-/** Unit 6 で実装予定のトップ画面プレースホルダ */
-function HomePlaceholder() {
-  return <div data-testid="home-page" style={{ padding: 16 }}>トップ画面（Unit 6で実装）</div>;
+/** Unit 7 で実装予定のガチャ画面プレースホルダ（Q4・ナビ成立用） */
+function GachaPlaceholder() {
+  return (
+    <div data-testid="gacha-page" style={{ padding: 16 }}>
+      ガチャ（Unit 7で実装）
+    </div>
+  );
 }
 
 /** Unit 8 で実装予定の設定画面プレースホルダ */
@@ -105,7 +112,7 @@ export function AppRoutes() {
             </RequireAuth>
           }
         >
-          <Route path="/" element={<HomePlaceholder />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/recipe" element={<RepertoireListPage />} />
           <Route path="/settings" element={<SettingsPlaceholder />} />
         </Route>
@@ -132,6 +139,34 @@ export function AppRoutes() {
           element={
             <RequireAuth>
               <RecipeEditPage />
+            </RequireAuth>
+          }
+        />
+
+        {/* 献立提案フロー（Unit 6・ボトムナビなし） */}
+        <Route
+          path="/suggestion/filter"
+          element={
+            <RequireAuth>
+              <FilteringPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/menu/:itemId"
+          element={
+            <RequireAuth>
+              <ConfirmedMenuDetailPage />
+            </RequireAuth>
+          }
+        />
+
+        {/* ガチャ（Unit 7・プレースホルダ） */}
+        <Route
+          path="/gacha"
+          element={
+            <RequireAuth>
+              <GachaPlaceholder />
             </RequireAuth>
           }
         />

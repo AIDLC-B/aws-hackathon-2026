@@ -1086,3 +1086,37 @@
 **Context**: CONSTRUCTION - Unit 5 Code Generation 完了・承認待ち
 
 ---
+
+---
+
+## Unit 5: 料理管理 - 承認・コミット/プッシュ（ユーザー実施）
+**Timestamp**: 2026-06-27T02:50:00Z
+**User Input**: "OK.コミット,pushしてください。" → （Git操作は本環境で許可されないためコマンド提示）→ "すみません。私の方でコミット、pushしたので次の作業を進めて"
+**AI Response**: Git操作はツール制約により実行不可。ユーザーがローカルでコミット・プッシュ済み。Unit 5 を承認として記録（aidlc-state更新済み）。Unit 6（献立提案）へ移行しステージ要否評価を開始。
+**Context**: CONSTRUCTION - Unit 5 完了・承認 → Unit 6 開始
+
+---
+
+## Unit 6: 献立提案 - ステージ要否評価・Code Generation Part 1 開始
+**Timestamp**: 2026-06-27T02:55:00Z
+**User Input**: （Unit 5承認後の自動遷移）
+**AI Response**: Unit 6のステージ要否評価（設計4ステージSKIP・Code Generation EXECUTE）。components.md/component-methods/ux-design/storiesを確認。Code Generation Part 1として計画ファイルを作成し質問を提示。ConfirmedMenuItem型の整合・確定済み献立詳細の材料表示・ホーム画面ディスパッチの所有・meal_suggestedインライン・ガチャ/Unit7への誘導プレースホルダ等の論点を質問化。
+**Context**: CONSTRUCTION - Unit 6 Code Generation Part 1（計画）— 質問提示
+
+---
+
+## Unit 6: 献立提案 - Code Generation Part 1回答受信・Part 2生成開始
+**Timestamp**: 2026-06-27T03:10:00Z
+**User Input**: "既存のunit6-meal-suggestion-code-generation-plan.mdについて、回答済みです"（Q1〜Q5すべてA採用）
+**AI Response**: Q1〜Q5の回答（すべてA）を計画ファイルから確認。Code Generation Part 2を開始。実行ステップ1〜11を順次実行する（ConfirmedMenuItem型整合→useConfirmedMenu→useSuggestion→CharacterInline→suggestionページ→confirmedMenuページ→ホームディスパッチ→ガチャ誘導プレースホルダ→テスト→ドキュメント→整合性確認）。
+**Context**: CONSTRUCTION - Unit 6 Code Generation Part 2（生成）— 開始
+
+---
+
+## Unit 6: 献立提案 - Code Generation Part 2 生成完了
+**Timestamp**: 2026-06-27T03:30:00Z
+**User Input**: （Part 1回答確定後の生成実行）
+**AI Response**: 全11ステップ実行。ConfirmedMenuItemをスナップショット方式に拡張（rarity/difficulty/duration必須化・ConfirmedMenuItemInput追加）。生成: features/confirmedMenu（useConfirmedMenu・MenuItemCard・MenuListPage・ConfirmedMenuDetailPage）、features/suggestion（useSuggestion・SuggestionResult・SelectionPage・FilteringPage）、features/character/CharacterInline（スタブ）、app/HomePage（件数ディスパッチ）。routes.tsx 結線（/ をHomePageへ・/suggestion/filter・/menu/:itemId・/gacha プレースホルダ追加）。テスト4ファイル追加。検証: typecheck（web+functions）成功、build成功、web新規含む64 pass/7 skip、get_diagnosticsクリーン。既知の無関係課題: firestore.rules.test.ts（エミュレータ前提）・useCollection.ts のlint既存指摘。code-summary生成・aidlc-state更新。
+**Context**: CONSTRUCTION - Unit 6 Code Generation 完了・承認待ち
+
+---

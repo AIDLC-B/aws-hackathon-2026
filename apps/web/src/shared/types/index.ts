@@ -25,6 +25,7 @@ export type {
   Recipe,
   RecipeInput,
   ConfirmedMenuItem,
+  ConfirmedMenuItemInput,
   AnalyzeRecipeImageRequest,
   RecipeAnalysis,
   SuggestMealsRequest,

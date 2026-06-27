@@ -139,16 +139,31 @@ export type RecipeInput = Omit<Recipe, "id" | "createdAt">;
 
 /**
  * 確定済み献立（users/{uid}/confirmedMenuItems/{itemId}）。
+ *
+ * スナップショット方式（Unit 6・Q1=A）:
+ * 確定時に表示に必要な属性（name/imageUrl/rarity/difficulty/duration）を保存する。
+ * 一覧表示でレシピを都度参照する必要がなく、元レシピが変更・削除されても
+ * 確定時点の情報が保持される。材料/レシピ/メモは保存せず、詳細表示時に
+ * recipeId から元レシピを参照する（Unit 6・Q2=A）。
  */
 export interface ConfirmedMenuItem {
   id: string;
   recipeId: string;
   name: string;
   imageUrl: string | null;
+  rarity: Rarity;
+  difficulty: Difficulty;
+  /** 所要時間（分） */
+  duration: number;
   source: Source;
-  rarity?: Rarity;
   confirmedAt?: FirestoreTimestamp;
 }
+
+/** 確定済み献立の保存入力（id / confirmedAt はシステム採番） */
+export type ConfirmedMenuItemInput = Omit<
+  ConfirmedMenuItem,
+  "id" | "confirmedAt"
+>;
 
 // ============================================================
 // Cloud Functions 契約型（CF-01/02/03 の入出力・フロント/Functions共通）

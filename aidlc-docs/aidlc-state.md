@@ -4,8 +4,8 @@
 - **Project Name**: DAMESI（ダメシ）
 - **Project Type**: Greenfield
 - **Start Date**: 2026-05-03T00:00:00Z
-- **Last Updated**: 2026-06-27T02:00:00Z
-- **Current Stage**: CONSTRUCTION PHASE - Per-Unit Loop (Unit 4: Cloud Functions基盤・承認待ち)
+- **Last Updated**: 2026-06-27T03:30:00Z
+- **Current Stage**: CONSTRUCTION PHASE - Per-Unit Loop (Unit 6: 献立提案・Code Generation完了・承認待ち)
 
 ## リポジトリ構成（2026-06-27 monorepo化）
 - **形態**: npm workspaces（`workspaces: ["apps/*"]`）
@@ -83,9 +83,16 @@
 - [-] NFR Requirements - SKIPPED（新規NFRなし）
 - [-] NFR Design - SKIPPED（連動）
 - [-] Infrastructure Design - SKIPPED（Storage/CF/Firestore定義済み）
-- [x] Code Generation - COMPLETED（承認待ち / features/recipe・onboarding・character[スタブ]・ボトムナビ・web全50テストpass）
+- [x] Code Generation - COMPLETED & APPROVED (2026-06-27T02:50:00Z / features/recipe・onboarding・character[スタブ]・ボトムナビ・web全50テストpass)
 
-#### Unit 6〜8 - 未着手
+#### Unit 6: 献立提案 ✅ 完了
+- [-] Functional Design - SKIPPED（提案/確定フロー・CF-02は確定済み）
+- [-] NFR Requirements - SKIPPED（新規NFRなし）
+- [-] NFR Design - SKIPPED（連動）
+- [-] Infrastructure Design - SKIPPED（Firestore/CF定義済み）
+- [x] Code Generation - COMPLETED（2026-06-27T03:30:00Z / features/suggestion・features/confirmedMenu・CharacterInlineスタブ・ホームディスパッチ・ガチャ誘導プレースホルダ・ConfirmedMenuItemスナップショット化・web新規4テスト含む64 pass）・承認待ち
+
+#### Unit 7〜8 - 未着手
 
 - [ ] Build and Test - EXECUTE（全ユニット完了後）
 
@@ -93,5 +100,5 @@
 - [ ] Operations - PLACEHOLDER
 
 ## 次回セッションの再開ポイント
-- **再開アクション**: Unit 4（Cloud Functions基盤）の Code Generation 承認 → 承認後Unit 5（料理管理）へ。または変更依頼対応
-- **参照ファイル**: `aidlc-docs/construction/unit4-cloud-functions/code/code-summary.md`（生成内容）, `functions/`（実装）, `aidlc-docs/construction/plans/unit4-cloud-functions-code-generation-plan.md`（計画）
+- **再開アクション**: Unit 6（献立提案）の Code Generation 承認 → 承認後 Unit 7（ガチャ）へ。または変更依頼対応
+- **参照ファイル**: `aidlc-docs/construction/unit6-meal-suggestion/code/code-summary.md`（生成内容）, `apps/web/src/features/suggestion` / `apps/web/src/features/confirmedMenu`（実装）, `aidlc-docs/construction/plans/unit6-meal-suggestion-code-generation-plan.md`（計画）
