@@ -71,3 +71,56 @@ GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccount.json npm run seed
 npm install
 npm run dev   # .env で VITE_USE_EMULATOR=true ならEmulator接続
 ```
+
+---
+
+## 8. ローカル（Emulator）で動かす手順と注意点
+
+Firebaseプロジェクトの実APIキーが無くても、Emulator だけでアプリ全体を動かせる。
+
+### 前提ツール
+| ツール | 要件 | 備考 |
+|---|---|---|
+| Firebase CLI | `brew install firebase-cli` | |
+| Node.js | v20 以上 | Functions の engines は 20 |
+| **JDK** | **21 以上** | firebase-tools は JDK 21 未満を拒否する（Firestore/Storage Emulator が JVM 上で動く）。`brew install openjdk@21` 後に `JAVA_HOME=/opt/homebrew/opt/openjdk@21` と `PATH` を設定 |
+
+### 起動手順
+```
+# 0. Functions をビルド（Emulator はビルド済み lib/ を読む）
+npm run build:functions
+
+# 1. Emulator 起動（.firebaserc の default プロジェクトで起動）
+firebase emulators:start
+
+# 2. マスターデータ投入（別ターミナル）
+cd apps/seed
+FIRESTORE_EMULATOR_HOST=localhost:8080 GCLOUD_PROJECT=da-mesi npm run seed
+
+# 3. 開発サーバー（別ターミナル）
+npm run dev
+```
+
+### ローカル用 `.env` の設定
+| 変数 | ローカル値 | 理由 |
+|---|---|---|
+| `VITE_USE_EMULATOR` | `true` | Auth/Firestore/Functions/Storage を Emulator に接続（`shared/lib/firebase.ts` / `functions.ts`） |
+| `VITE_FIREBASE_API_KEY` | ダミー可 | Emulator はAPIキー検証を行わない |
+| `VITE_FIREBASE_PROJECT_ID` | **Emulator の起動プロジェクトと同一値** | Callable Functions のURLが `http://localhost:5001/{projectId}/{region}/{関数名}` になるため、不一致だと **404 → CORSエラー** になる |
+| `LLM_PROVIDER` | `mock` | CF-01の画像認識が固定レスポンスになり、Anthropic/OpenAI のAPIキーが不要 |
+
+### よくあるエラーと対処
+| 症状 | 原因 | 対処 |
+|---|---|---|
+| `API key not valid`（identitytoolkit） | `VITE_USE_EMULATOR=false` のまま、または `.env` がプレースホルダ | `VITE_USE_EMULATOR=true` にして dev サーバーを再起動（Viteは起動時のみ `.env` を読む） |
+| `firebase-tools no longer supports Java version before 21` | JDK が 21 未満 | JDK 21 を導入し `JAVA_HOME` を切り替え |
+| Functions 呼び出しが 404 → CORSエラー | `.env` の `projectId` と Emulator の起動プロジェクトが不一致 | 両者を一致させる（`.firebaserc` の `default` を確認） |
+| キャラの一言がコード内蔵の台詞になる | `characterDialogues` が未投入 | seed を Emulator に対して実行（Unit 8 はマスター未取得でも内蔵台詞にフォールバックする） |
+
+### データの永続化（任意）
+Emulator を停止するとデータは消える。保持したい場合:
+```
+firebase emulators:start --import ./.emulator-data --export-on-exit
+```
+
+> **本番デプロイ前の切り戻し**: `.env` の `VITE_FIREBASE_*` を実プロジェクトの値に、`VITE_USE_EMULATOR=false`、`LLM_PROVIDER=anthropic` へ戻す。`projectId` が実プロジェクトのまま `VITE_USE_EMULATOR=false` にすると本番Firestoreへ書き込まれるため注意。

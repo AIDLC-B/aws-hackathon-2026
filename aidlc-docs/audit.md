@@ -1174,3 +1174,15 @@
 **User Input**: （Part 1全回答確定後の生成実行）
 **AI Response**: 全15ステップ実行。型追加（`CharacterDialogue` を apps/shared/types へ・web再エクスポート）。新規: features/character（characterProfiles[7キャラ属性 + 7キャラ×6triggerの内蔵フォールバック台詞]・characterImages[画像31枚結線]・dialogueSelector[TRIGGER_TONES/FIXED_CHARACTER/段階的フォールバックの純粋関数]・CharacterAvatar）、app/providers/CharacterDialogueProvider（起動時に characterDialogues を1回取得しキャッシュ）、features/settings（useSettings・PremiumSettings・SettingsPage・CharacterSelectPage）。差し替え: useCharacterDialogue（スタブ→正式実装・同期IF維持のため呼び出し元Unit 5/6/7は無変更）・CharacterBottomSheet・CharacterInline・RerollLimitScreen。変更: AppProvider・routes.tsx（/settings 実体化・/settings/characters 追加）・firestore.rules（Unit 5/6 の追記漏れを補完: recipes / confirmedMenuItems に本人スコープのread/write）。テスト5ファイル新規 + CharacterInline.test 更新。検証: typecheck（web+functions）成功、build成功、vitest（rules除く）23ファイル102 pass、get_diagnostics（13ファイル）クリーン、lint は本ユニット由来の指摘なし。既知の無関係課題: tests/rules（エミュレータ前提）・useCollection.ts のlint既存指摘。code-summary生成・plan全チェック・aidlc-state更新。
 **Context**: CONSTRUCTION - Unit 8 Code Generation 完了・承認待ち
+
+## ローカル実行環境の整備（Emulator接続）
+**Timestamp**: 2026-07-26T01:40:00Z
+**User Input**: "このあと何したらいいの？" → "firebaseコマンド打てるようにしたいんだけど、brewコマンドちょうだい" → "firebase emulators:start ... Error: firebase-tools no longer supports Java version before 21" → "Googleでログインを実行しようとすると、以下のAPIでエラーが出ます。https://identitytoolkit.googleapis.com/v1/projects?key=your-api-key ローカル実行で挙動確認するにはどうしたらいい？" → "{API key not valid...}" → "http://localhost:5001/demo-damesi/us-central1/suggestMeals でCORSエラー ... そのあと404でてるよ"
+**AI Response**: 次アクション（Unit 8承認→Build and Test / 事前の動作確認 / 修正）を提示。Firebase CLI導入（`brew install firebase-cli`）とJDK21要件（`brew install openjdk@21` + JAVA_HOME）を案内。認証エラーの原因を特定: `.env` が `.env.example` のコピー（`VITE_FIREBASE_API_KEY=your-api-key`）かつ `VITE_USE_EMULATOR=false` のため本番Identity Toolkitへ無効キーで問い合わせていた。`.env` をEmulator向けに更新（APIキーはダミー・`VITE_USE_EMULATOR=true`・`LLM_PROVIDER=mock`）。続くFunctions 404+CORSは、Emulatorが `da-mesi`（loginアカウントの既定）で起動する一方フロントが `demo-damesi` を参照していたためのURL不一致と判明（`curl -X OPTIONS .../da-mesi/...` は204）。`.env` の projectId を `da-mesi` に統一し、`.firebaserc`（default=da-mesi）を新規作成して起動プロジェクトを固定。dev再起動とseed再投入を案内。
+**Context**: CONSTRUCTION - ローカル動作確認環境の整備（コード変更なし・設定と手順の整備）
+
+## Unit 8: AIキャラクター - 承認（コミット/push完了）→ state更新
+**Timestamp**: 2026-07-26T02:00:00Z
+**User Input**: "一旦、コミット、pushをお願い。諸々更新してね" → "ごめん。コミットpushしておきました。諸々のstate更新して"
+**AI Response**: ユーザーがコミット `8c0d15f`「基本機能作成」をmainへpush済みであることを確認（作業ツリーはクリーン）。これをもってUnit 8 Code Generationを承認として記録。aidlc-state.md を更新（Unit 8をCOMPLETED & APPROVED・Current Stageを「全8ユニット完了 → Build and Test 着手前」・ローカル開発環境セクションを追記・再開ポイントをBuild and Testへ変更）。`apps/seed/SETUP.md` にセクション8「ローカル（Emulator）で動かす手順と注意点」を追記（JDK21要件・起動順・ローカル用.env設定表・よくあるエラー4件と対処・データ永続化・本番切り戻し手順）。
+**Context**: CONSTRUCTION - Unit 8 完了・承認 → Build and Test 着手前
