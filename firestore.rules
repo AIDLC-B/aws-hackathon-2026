@@ -22,9 +22,15 @@ service cloud.firestore {
       // 削除は不可
       allow delete: if false;
 
-      // --- サブコレクションは各ユニットで追記 ---
-      // Unit 5: match /recipes/{recipeId} { ... }
-      // Unit 6: match /confirmedMenuItems/{itemId} { ... }
+      // --- サブコレクション（本人スコープ・SEC-1） ---
+      // Unit 5: レパートリー。本人のみ読み書き可（Unit 8で補完）
+      match /recipes/{recipeId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+      // Unit 6: 確定済み献立。本人のみ読み書き可（Unit 8で補完）
+      match /confirmedMenuItems/{itemId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
     }
 
     // ===== マスターコレクション（Unit 2 が所有・読み取り専用） =====

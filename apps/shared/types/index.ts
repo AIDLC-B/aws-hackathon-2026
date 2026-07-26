@@ -240,3 +240,16 @@ export interface CharacterLine {
   tone: Tone;
   message: string;
 }
+
+/**
+ * characterDialogues/{docId} — キャラクター台詞マスター（Unit 2が投入・読み取り専用）。
+ * Unit 8（features/character）が起動時に一括取得し、trigger/tone/isPremium/推しキャラで絞り込む。
+ */
+export interface CharacterDialogue {
+  characterId: CharacterId;
+  trigger: Trigger;
+  tone: Tone;
+  message: string;
+  /** true = プレミアムユーザーのみ対象の台詞 */
+  isPremium: boolean;
+}

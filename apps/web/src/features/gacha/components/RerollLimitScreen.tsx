@@ -1,8 +1,7 @@
 import { Button } from "@/shared/components/ui";
-import {
-  useCharacterDialogue,
-  CHARACTER_NAME,
-} from "@/features/character/hooks/useCharacterDialogue";
+import { useCharacterDialogue } from "@/features/character/hooks/useCharacterDialogue";
+import { getCharacterProfile } from "@/features/character/characterProfiles";
+import { CharacterAvatar } from "@/features/character/components/CharacterAvatar";
 import { DELIVERY_URL, DELIVERY_LABEL } from "@/features/gacha/config";
 
 interface RerollLimitScreenProps {
@@ -14,15 +13,16 @@ interface RerollLimitScreenProps {
  * 堕落ルート画面（US-11）。リセマラ上限到達時にメシストフェレスが登場し、
  * デリバリー誘導リンクと「やっぱり作る」を表示する。
  *
- * 【Unit 7】一言は useCharacterDialogue（gacha_reroll_limit・現状スタブ）。
- * Unit 8 でメシストフェレスの画像・正式セリフに差し替える。
- * trigger × from 表（component-methods）では gacha_reroll_limit は専用画面・
- * メシストフェレス固定。
+ * 【Unit 8で更新】一言は useCharacterDialogue（gacha_reroll_limit）。trigger × from 表
+ * （component-methods）では gacha_reroll_limit は専用画面・メシストフェレス固定であり、
+ * 選択ロジック側（dialogueSelector の FIXED_CHARACTER）でも固定を保証している。
+ * ビジュアルは CharacterAvatar（画像連携時に自動で画像表示へ切替）。
  */
 export function RerollLimitScreen({ onBack }: RerollLimitScreenProps) {
   const { getDialogue } = useCharacterDialogue();
   const line = getDialogue({ trigger: "gacha_reroll_limit", from: "gacha" });
-  const name = line ? CHARACTER_NAME[line.characterId] : "メシストフェレス";
+  const characterId = line?.characterId ?? "meshistopheles";
+  const name = getCharacterProfile(characterId).name;
   const message = line?.message ?? "…もう、こっちにおいでよ。";
 
   return (
@@ -42,23 +42,8 @@ export function RerollLimitScreen({ onBack }: RerollLimitScreenProps) {
         borderRadius: 16,
       }}
     >
-      {/* Unit 8 でメシストフェレスの画像に差し替え */}
-      <div
-        aria-hidden
-        style={{
-          width: 96,
-          height: 96,
-          borderRadius: "50%",
-          background: "rgba(171,71,188,0.3)",
-          border: "2px solid #ce93d8",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 48,
-        }}
-      >
-        😈
-      </div>
+      {/* 堕落ルートは立ち絵で大きく登場させる（メシストフェレス固定） */}
+      <CharacterAvatar characterId={characterId} shape="portrait" size={200} />
       <strong style={{ fontSize: 16, color: "#ce93d8" }}>{name}</strong>
       <p style={{ margin: 0, fontSize: 18, lineHeight: 1.7 }}>{message}</p>
 

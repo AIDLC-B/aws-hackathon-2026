@@ -4,8 +4,8 @@
 - **Project Name**: DAMESI（ダメシ）
 - **Project Type**: Greenfield
 - **Start Date**: 2026-05-03T00:00:00Z
-- **Last Updated**: 2026-06-27T04:10:00Z
-- **Current Stage**: CONSTRUCTION PHASE - Per-Unit Loop (Unit 7: 承認済み・Unit 8 着手前で停止中)
+- **Last Updated**: 2026-07-26T01:10:00Z
+- **Current Stage**: CONSTRUCTION PHASE - Per-Unit Loop (Unit 8: Code Generation 完了・承認待ち)
 
 ## リポジトリ構成（2026-06-27 monorepo化）
 - **形態**: npm workspaces（`workspaces: ["apps/*"]`）
@@ -99,7 +99,13 @@
 - [-] Infrastructure Design - SKIPPED（Firestore/CF定義済み）
 - [x] Code Generation - COMPLETED & APPROVED（2026-06-27T04:20:00Z / features/gacha[useGacha・GachaSpinner・GachaResult・RerollLimitScreen・GachaPage]・useConfirmedMenu.clearAll追加・/gacha実体化・リセマラsessionStorage・10連add/replace・web新規4テスト含む83 pass）
 
-#### Unit 8 - 未着手
+#### Unit 8: AIキャラクター ✅ 生成完了（承認待ち）
+- [-] Functional Design - SKIPPED（キャラIF型・台詞スキーマ・trigger×tone対応表が確定済み）
+- [-] NFR Requirements - SKIPPED（新規NFRなし）
+- [-] NFR Design - SKIPPED（連動）
+- [-] Infrastructure Design - SKIPPED（Firestore/Hosting定義済み）
+- [x] Code Generation Part 1（計画）- COMPLETED（Q1〜Q6 回答確定）
+- [x] Code Generation Part 2（生成）- COMPLETED・承認待ち（2026-07-26T01:10:00Z / features/character[characterProfiles・characterImages(画像31枚結線)・dialogueSelector・CharacterAvatar・useCharacterDialogue正式実装・BottomSheet/Inline立ち絵化]・CharacterDialogueProvider・features/settings[useSettings・PremiumSettings・SettingsPage・CharacterSelectPage]・/settings + /settings/characters 結線・firestore.rules サブコレクション補完・web新規5テスト含む102 pass）
 
 - [ ] Build and Test - EXECUTE（全ユニット完了後）
 
@@ -107,5 +113,6 @@
 - [ ] Operations - PLACEHOLDER
 
 ## 次回セッションの再開ポイント
-- **再開アクション**: Unit 8（AIキャラクター）の着手（ステージ要否評価 → Code Generation）。ユーザー指示により現在は着手前で停止中
-- **参照ファイル**: `aidlc-docs/construction/unit7-gacha/code/code-summary.md`（Unit 7生成内容）, `apps/web/src/features/gacha`（実装）, `apps/web/src/features/character`（Unit 8で差替対象のスタブ: useCharacterDialogue・CharacterBottomSheet・CharacterInline）
+- **再開アクション**: Unit 8 の承認を受けて Build and Test ステージ（全8ユニット完了後の最終ステージ）を実行
+- **参照ファイル**: `aidlc-docs/construction/unit8-ai-character/code/code-summary.md`（Unit 8生成内容・申し送り）, `apps/web/src/features/character`, `apps/web/src/features/settings`, `firestore.rules`（Unit 8でサブコレクション補完済み・エミュレータでのRules検証はBuild & Testで実施）
+- **Build & Test での既知課題**: `apps/web/tests/rules/firestore.rules.test.ts` はエミュレータ前提で未実行。`shared/hooks/useCollection.ts:72` のlint指摘（`react-hooks/exhaustive-deps` ルール未定義）も未解消。キャラクター画像（計約7MB）のWebP最適化は任意改善

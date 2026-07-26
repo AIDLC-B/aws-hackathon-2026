@@ -35,6 +35,7 @@ export type {
   SpinGachaResponse,
   CharacterId,
   CharacterLine,
+  CharacterDialogue,
 } from "@shared/types";
 
 import type { Trigger, From, CharacterId, CharacterLine } from "@shared/types";

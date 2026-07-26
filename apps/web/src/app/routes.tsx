@@ -18,6 +18,8 @@ import { RecipeEditPage } from "@/features/recipe/pages/RecipeEditPage";
 import { FilteringPage } from "@/features/suggestion/pages/FilteringPage";
 import { ConfirmedMenuDetailPage } from "@/features/confirmedMenu/pages/ConfirmedMenuDetailPage";
 import { GachaPage } from "@/features/gacha/pages/GachaPage";
+import { SettingsPage } from "@/features/settings/pages/SettingsPage";
+import { CharacterSelectPage } from "@/features/settings/pages/CharacterSelectPage";
 
 /** ローディング表示（UP-1 ローディングゲート） */
 function LoadingScreen() {
@@ -34,11 +36,6 @@ function LoadingScreen() {
       読み込み中...
     </div>
   );
-}
-
-/** Unit 8 で実装予定の設定画面プレースホルダ */
-function SettingsPlaceholder() {
-  return <div data-testid="settings-page" style={{ padding: 16 }}>設定（Unit 8で実装）</div>;
 }
 
 /**
@@ -106,8 +103,18 @@ export function AppRoutes() {
         >
           <Route path="/" element={<HomePage />} />
           <Route path="/recipe" element={<RepertoireListPage />} />
-          <Route path="/settings" element={<SettingsPlaceholder />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
+
+        {/* 推しキャラ選択（Unit 8・ボトムナビなし・戻る導線） */}
+        <Route
+          path="/settings/characters"
+          element={
+            <RequireAuth>
+              <CharacterSelectPage />
+            </RequireAuth>
+          }
+        />
 
         {/* レシピのサブ画面（ボトムナビなし・戻る導線） */}
         <Route

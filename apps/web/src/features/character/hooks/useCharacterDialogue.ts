@@ -1,70 +1,49 @@
+import { useContext } from "react";
 import type {
   CharacterDialogueQuery,
-  CharacterId,
   CharacterLine,
-  Trigger,
   UseCharacterDialogue,
 } from "@/shared/types";
+import { AuthContext } from "@/app/providers/AuthProvider";
+import { CharacterDialogueContext } from "@/app/providers/CharacterDialogueProvider";
+import { selectDialogue } from "@/features/character/dialogueSelector";
 
 /**
- * 【Unit 5 スタブ】キャラクター一言フック。
+ * キャラクター一言フック（Unit 8・正式実装）。
  *
- * 実体は Unit 8（AIキャラクター）で実装する。本スタブは trigger に応じた
- * 固定文言を返すだけで、キャラクター選択・トーン決定・マスターデータ参照・
- * isPremium/推しキャラ絞り込みは行わない。
+ * 呼び出し元は `trigger` と `from` のみを渡す。キャラクター選択・トーン決定・
+ * isPremium / 推しキャラ（favoriteCharacters）による絞り込みはすべて本モジュール内部で行う
+ * （キャラクタードメインIF設計・component-methods.md）。
  *
- * IF（入出力型）は `@shared/types` の UseCharacterDialogue / CharacterDialogueQuery /
- * CharacterLine に準拠しているため、Unit 8 では本ファイルの中身のみ差し替えればよい。
+ * - 台詞マスターは `CharacterDialogueProvider` が起動時に一度だけ取得したキャッシュを参照
+ * - `isPremium` / `favoriteCharacters` は AuthContext から自動取得（query で明示指定も可能）
+ * - 選択ロジックは純粋関数 `selectDialogue` に委譲
+ * - Provider外・マスター未取得時はコード内蔵のフォールバック台詞を返す（無言にはならない）
  */
-
-/** キャラクター表示名（暫定・Unit 8でマスター/正式設定に置換） */
-export const CHARACTER_NAME: Record<CharacterId, string> = {
-  saboeru: "サボエル",
-  sabokachan: "サボ母ちゃん",
-  nyamake: "ニャマケ",
-  chefrei: "シェフレイ",
-  meshistopheles: "メシストフェレス",
-  sabot: "サボット",
-  sabowrashi: "サボわらし",
-};
-
-/** trigger 別の固定一言（スタブ） */
-const STUB_LINE: Record<Trigger, CharacterLine> = {
-  recipe_registered: {
-    characterId: "sabokachan",
-    tone: "praise",
-    message: "ええやん！また一品増えたな、その調子やで！",
-  },
-  meal_decided: {
-    characterId: "sabokachan",
-    tone: "praise",
-    message: "これで決まりやな！考えんでええって最高やろ？",
-  },
-  gacha_decided: {
-    characterId: "meshistopheles",
-    tone: "praise",
-    message: "ふふ、運命の一皿だね。委ねるって気持ちいいでしょ？",
-  },
-  meal_completed: {
-    characterId: "sabowrashi",
-    tone: "praise",
-    message: "つくったんやね、えらい！えへへ、おつかれさま〜",
-  },
-  meal_suggested: {
-    characterId: "sabokachan",
-    tone: "encouragement",
-    message: "この中から選ぶだけでええんやで。",
-  },
-  gacha_reroll_limit: {
-    characterId: "meshistopheles",
-    tone: "empathy",
-    message: "…もう、こっちにおいでよ。",
-  },
-};
-
 export function useCharacterDialogue(): UseCharacterDialogue {
+  const auth = useContext(AuthContext);
+  const master = useContext(CharacterDialogueContext);
+
+  const profile = auth?.profile ?? null;
+  const dialogues = master?.dialogues ?? [];
+  const loading = master?.loading ?? false;
+
   function getDialogue(query: CharacterDialogueQuery): CharacterLine | null {
-    return STUB_LINE[query.trigger] ?? null;
+    const isPremium = query.isPremium ?? profile?.isPremium ?? false;
+    const favoriteCharacters =
+      query.favoriteCharacters ?? profile?.favoriteCharacters ?? [];
+
+    return selectDialogue({
+      dialogues,
+      trigger: query.trigger,
+      isPremium,
+      favoriteCharacters,
+    });
   }
-  return { getDialogue, loading: false };
+
+  return { getDialogue, loading };
 }
+
+// キャラクター表示名は characterProfiles が単一ソース。
+// Unit 5/6/7 は本モジュールから `CHARACTER_NAME` を import しているため再エクスポートで互換維持。
+export { CHARACTER_NAME } from "@/features/character/characterProfiles";

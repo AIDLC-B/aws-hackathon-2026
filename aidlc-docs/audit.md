@@ -1150,3 +1150,27 @@
 **User Input**: "承認しますが、次の作業は進めないでください。"
 **AI Response**: Unit 7 Code Generation を承認として記録（aidlc-state更新）。Unit 8（AIキャラクター）には着手せず停止。次回再開時にUnit 8へ進む。
 **Context**: CONSTRUCTION - Unit 7 完了・承認 → Unit 8 着手前で停止
+
+## Unit 8: AIキャラクター - セッション再開 → ステージ要否評価・Code Generation Part 1（計画）
+**Timestamp**: 2026-07-26T00:00:00Z
+**User Input**: "よっしゃ。続きからお願い"
+**AI Response**: aidlc-state.md を読み込み、Unit 7承認済み・Unit 8着手前で停止中を確認。前ステージ成果物（unit-of-work.md / unit-of-work-story-map.md / component-methods.md / services.md[trigger×tone組合せ定義] / requirements.md[FR-03・FR-06] / ux-design.md[設定画面・ボトムシート仕様] / unit7 code-summary）と既存コード（features/character スタブ・shared/types のキャラIF型・apps/shared/types・AuthProvider・useAuth・routes.tsx[SettingsPlaceholder]・AppLayout・firestore.rules・seed の character-dialogues.json[50件・isPremium true14/false36]）を確認。Unit 8のステージ要否評価（設計4ステージSKIP・Code Generation EXECUTE）を行い、計画ファイル（unit8-ai-character-code-generation-plan.md）を作成し質問6件を提示。論点: 台詞マスターの取得/キャッシュ方式・キャラビジュアル表現・推しキャラ絞り込み時のフォールバック・推しキャラ選択画面の配置・設定画面範囲とテスト方針・firestore.rules のサブコレクション未追記（Unit 5/6漏れ）の扱い。
+**Context**: CONSTRUCTION - Unit 8 Code Generation Part 1（計画）— 質問提示・承認待ち
+
+## Unit 8: AIキャラクター - Part 1 回答確定 → Part 2 生成開始
+**Timestamp**: 2026-07-26T00:20:00Z
+**User Input**: "OK。進めて"（計画ファイル記入済みの回答: Q1="A" / Q2="一旦画像はこのあと連携するので、待ってて。特徴は過去のものをベースに作成してください。" / Q3="一旦作成をお願いします。全キャラコメントありきで、条件合致しない場合はフォールバックでOKです。" / Q4="A" / Q5="A" / Q6="aについては、代表ケースでいいよ。全部は重たい。bは補完をお願い。"）
+**AI Response**: 回答を確定として記録。Q1=A（CharacterDialogueProviderで起動時一括取得・同期IF維持）/ Q2=画像は後日連携のため `imagePath` 構造＋絵文字/テーマカラーのプレースホルダで作成（特徴は既存の表現をベースに）/ Q3=7キャラ全員分のフォールバック台詞を characterProfiles に内蔵し、マスター候補0件時は段階的フォールバック / Q4=A（`/settings/characters` 別ルート）/ Q5=A（設定画面3要素・呼び出し元は無変更）/ Q6a=代表ケースのユニットテストに限定（網羅は行わない）・Q6b=firestore.rules のサブコレクション補完を実施。Code Generation Part 2 を開始。
+**Context**: CONSTRUCTION - Unit 8 Code Generation Part 2（生成）— 開始
+
+## Unit 8: AIキャラクター - キャラクター画像の連携
+**Timestamp**: 2026-07-26T01:00:00Z
+**User Input**: "作業を続けて。画像については、いかに配置しているから確認してね。良きタイミングで/apps/web/src/assets" → "ごめんメシストフェレスだけ画像差し替えたわ。影響ないと思うけど一応連携"
+**AI Response**: `apps/web/src/assets/` を確認し、7キャラ分の画像31枚（サボエル4/サボ母ちゃん4/ニャマケ7/シェフレイ4/メシストフェレス3/サボット4/サボわらし4・日本語ディレクトリ&ファイル名）を検出。メシストフェレスの差し替え後の3枚を含めて再確認し、`features/character/characterImages.ts` を新規作成してVite asset importで結線（代表画像=各キャラ1枚目・`getCharacterImage(id, variant)` で循環参照）。`characterProfiles` は画像を自動注入する構成（BASE_PROFILES + CHARACTER_IMAGES）へ変更。画像の縦横比がキャラごとに異なる（縦長422x632・横長579x431等）ため `CharacterAvatar` に `shape="circle"|"portrait"` と `variant` を追加し `objectFit: contain` で切り取りを回避。ボトムシート(110px)・インライン(48px)・キャラ選択カード(72px)・堕落ルート(200px)を立ち絵表示に更新。
+**Context**: CONSTRUCTION - Unit 8 Code Generation Part 2（生成）— 画像連携
+
+## Unit 8: AIキャラクター - Code Generation Part 2 生成完了
+**Timestamp**: 2026-07-26T01:10:00Z
+**User Input**: （Part 1全回答確定後の生成実行）
+**AI Response**: 全15ステップ実行。型追加（`CharacterDialogue` を apps/shared/types へ・web再エクスポート）。新規: features/character（characterProfiles[7キャラ属性 + 7キャラ×6triggerの内蔵フォールバック台詞]・characterImages[画像31枚結線]・dialogueSelector[TRIGGER_TONES/FIXED_CHARACTER/段階的フォールバックの純粋関数]・CharacterAvatar）、app/providers/CharacterDialogueProvider（起動時に characterDialogues を1回取得しキャッシュ）、features/settings（useSettings・PremiumSettings・SettingsPage・CharacterSelectPage）。差し替え: useCharacterDialogue（スタブ→正式実装・同期IF維持のため呼び出し元Unit 5/6/7は無変更）・CharacterBottomSheet・CharacterInline・RerollLimitScreen。変更: AppProvider・routes.tsx（/settings 実体化・/settings/characters 追加）・firestore.rules（Unit 5/6 の追記漏れを補完: recipes / confirmedMenuItems に本人スコープのread/write）。テスト5ファイル新規 + CharacterInline.test 更新。検証: typecheck（web+functions）成功、build成功、vitest（rules除く）23ファイル102 pass、get_diagnostics（13ファイル）クリーン、lint は本ユニット由来の指摘なし。既知の無関係課題: tests/rules（エミュレータ前提）・useCollection.ts のlint既存指摘。code-summary生成・plan全チェック・aidlc-state更新。
+**Context**: CONSTRUCTION - Unit 8 Code Generation 完了・承認待ち

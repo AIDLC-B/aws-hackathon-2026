@@ -1,20 +1,19 @@
 import type { CharacterInlineProps } from "@/shared/types";
-import {
-  useCharacterDialogue,
-  CHARACTER_NAME,
-} from "@/features/character/hooks/useCharacterDialogue";
+import { useCharacterDialogue } from "@/features/character/hooks/useCharacterDialogue";
+import { getCharacterProfile } from "@/features/character/characterProfiles";
+import { CharacterAvatar } from "@/features/character/components/CharacterAvatar";
 
 /**
  * キャラクター一言インライン表示（meal_suggested・フィルタリング画面）。
  *
- * 【Unit 6 スタブ】ボトムシートではなく画面内にインラインで一言を差し込む表示。
- * 一言は useCharacterDialogue（現状スタブ）。Unit 8 でキャラクター画像・
- * 正式な選択ロジックに拡張する。
+ * 【Unit 8】ボトムシートではなく画面内に一言を差し込む表示。台詞は
+ * `useCharacterDialogue`（正式実装）、ビジュアルは `CharacterAvatar`。
  */
 export function CharacterInline({ trigger, from }: CharacterInlineProps) {
   const { getDialogue } = useCharacterDialogue();
   const line = getDialogue({ trigger, from });
   if (!line) return null;
+  const profile = getCharacterProfile(line.characterId);
 
   return (
     <div
@@ -23,32 +22,22 @@ export function CharacterInline({ trigger, from }: CharacterInlineProps) {
         display: "flex",
         alignItems: "center",
         gap: 10,
-        background: "#fff4ef",
-        border: "1px solid #ffd9c9",
+        background: profile.bgColor,
+        border: `1px solid ${profile.themeColor}33`,
         borderRadius: 12,
         padding: "10px 14px",
       }}
     >
-      {/* Unit 8 でキャラクター画像に差し替え */}
-      <div
-        aria-hidden
-        style={{
-          width: 36,
-          height: 36,
-          flexShrink: 0,
-          borderRadius: "50%",
-          background: "#ffe0d6",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 20,
-        }}
-      >
-        🍙
-      </div>
+      <CharacterAvatar
+        characterId={line.characterId}
+        shape="portrait"
+        size={48}
+      />
       <div style={{ display: "flex", flexDirection: "column" }}>
-        <span style={{ fontSize: 12, color: "#ff7043", fontWeight: 600 }}>
-          {CHARACTER_NAME[line.characterId]}
+        <span
+          style={{ fontSize: 12, color: profile.themeColor, fontWeight: 600 }}
+        >
+          {profile.name}
         </span>
         <span style={{ fontSize: 14, color: "#333", lineHeight: 1.5 }}>
           {line.message}

@@ -1,15 +1,15 @@
 import type { CharacterBottomSheetProps } from "@/shared/types";
 import { BottomSheet } from "@/shared/components/ui";
-import {
-  useCharacterDialogue,
-  CHARACTER_NAME,
-} from "@/features/character/hooks/useCharacterDialogue";
+import { useCharacterDialogue } from "@/features/character/hooks/useCharacterDialogue";
+import { getCharacterProfile } from "@/features/character/characterProfiles";
+import { CharacterAvatar } from "@/features/character/components/CharacterAvatar";
 
 /**
- * キャラクター一言ボトムシート（trigger系の一言表示）。
+ * キャラクター一言ボトムシート（US-13 / US-14 ほか trigger 系の一言表示）。
  *
- * 【Unit 5】土台は shared/ui の BottomSheet。一言は useCharacterDialogue（現状スタブ）。
- * Unit 8 でキャラクター画像・正式な選択ロジックに拡張する。
+ * 【Unit 8】台詞は `useCharacterDialogue`（マスター参照 + キャラ/トーン選択 +
+ * isPremium/推しキャラ絞り込み）。ビジュアルは `CharacterAvatar`（画像連携時に自動切替）。
+ * ux-design 準拠: キャラクター画像 + 名前 + セリフ、閉じるボタン または自動クローズ。
  */
 export function CharacterBottomSheet({
   trigger,
@@ -20,31 +20,28 @@ export function CharacterBottomSheet({
 }: CharacterBottomSheetProps) {
   const { getDialogue } = useCharacterDialogue();
   const line = open ? getDialogue({ trigger, from }) : null;
+  const profile = line ? getCharacterProfile(line.characterId) : null;
 
   return (
     <BottomSheet open={open && !!line} onClose={onClose} autoCloseMs={autoCloseMs}>
-      {line && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {line && profile && (
+        <div
+          data-testid="character-bottom-sheet"
+          style={{ display: "flex", flexDirection: "column", gap: 12 }}
+        >
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {/* Unit 8 でキャラクター画像に差し替え */}
-            <div
-              aria-hidden
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: "50%",
-                background: "#ffe0d6",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 28,
-              }}
-            >
-              🍙
-            </div>
-            <strong style={{ fontSize: 15 }}>
-              {CHARACTER_NAME[line.characterId]}
-            </strong>
+            {/* 立ち絵（縦長イラストを切り取らずに表示） */}
+            <CharacterAvatar
+              characterId={line.characterId}
+              shape="portrait"
+              size={110}
+            />
+            <span style={{ display: "flex", flexDirection: "column" }}>
+              <strong style={{ fontSize: 15, color: profile.themeColor }}>
+                {profile.name}
+              </strong>
+              <span style={{ fontSize: 11, color: "#888" }}>{profile.title}</span>
+            </span>
           </div>
           <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6 }}>
             {line.message}
@@ -52,11 +49,12 @@ export function CharacterBottomSheet({
           <button
             type="button"
             onClick={onClose}
+            data-testid="character-bottom-sheet-close-button"
             style={{
               alignSelf: "flex-end",
               background: "transparent",
               border: "none",
-              color: "#ff7043",
+              color: profile.themeColor,
               fontWeight: 600,
               fontSize: 15,
               cursor: "pointer",
