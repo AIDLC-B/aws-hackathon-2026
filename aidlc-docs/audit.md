@@ -1246,3 +1246,9 @@
 **User Input**: （2回目のCIも build-and-test で failure）
 **AI Response**: lint / typecheck は通過し、Emulator テストステップで `firebase-tools no longer supports Java version before 21` により失敗。GitHub ランナー既定のJDKが21未満のため。ローカル環境構築時（2026-07-26）と同じ制約で、ワークフロー側だけ未対応だった。`actions/setup-java@v4`（temurin 21）を Firebase CLI インストール直後に追加。
 **Context**: CONSTRUCTION - CI失敗の解消（Emulator実行環境）
+
+## CI結果: build-and-test 成功 / deploy は Secrets 未登録で失敗（本番への影響なし）
+**Timestamp**: 2026-09-21T11:35:00Z
+**User Input**: （3回目のCI結果）
+**AI Response**: `actions/setup-java@v4`（temurin 21）追加により **build-and-test が初めて success**（lint / typecheck / Emulator込みテスト / build すべて通過）。続く deploy ジョブは `firebase deploy --project "" --token ""` となり `Failed to authenticate` で失敗。`FIREBASE_PROJECT_ID` / `FIREBASE_TOKEN` の GitHub Secrets が未登録のため。**デプロイは一切実行されていないため、公開中のサイトへの影響は無い**（Firebase設定が空のバンドルが公開される事態も回避された）。デプロイを有効にするには Secrets の登録が必要: `FIREBASE_PROJECT_ID` / `FIREBASE_TOKEN` に加え、バンドルへ埋め込む `VITE_FIREBASE_*` 5件。なお `firebase login:ci` のトークン方式は新しい firebase-tools では非推奨であり、サービスアカウント（`GOOGLE_APPLICATION_CREDENTIALS` / `FIREBASE_SERVICE_ACCOUNT`）方式への変更も検討対象。
+**Context**: CONSTRUCTION - CI/CD の現状確定

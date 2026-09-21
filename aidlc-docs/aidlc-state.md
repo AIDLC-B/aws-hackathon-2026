@@ -137,7 +137,12 @@
 ## CI/CD の状態（2026-09-21）
 - **解消済み**: `.gitignore` の `lib/` パターンがソースにも一致し、`apps/web/src/shared/lib/**`（3ファイル）と `apps/functions/src/lib/**`（12ファイル）が未コミットだった。ルートを `apps/functions/lib/`、Functions側を `/lib/` に限定して解消（これが従来のCI失敗の根本原因）。
 - **解消済み**: `.env` がリポジトリに無いため CI のテストで Firebase SDK 初期化が失敗していた → ワークフローのテストステップにダミーの `VITE_FIREBASE_*` を付与。
-- **⚠ 要対応**: Build ステップに `VITE_FIREBASE_*` の GitHub Secrets 参照を追加したが、**Secrets 自体が未登録**。このままデプロイされるとバンドルの Firebase 設定が空になり、本番アプリは動作しない。必要な Secrets: `VITE_FIREBASE_API_KEY` / `VITE_FIREBASE_AUTH_DOMAIN` / `VITE_FIREBASE_STORAGE_BUCKET` / `VITE_FIREBASE_MESSAGING_SENDER_ID` / `VITE_FIREBASE_APP_ID`（`VITE_FIREBASE_PROJECT_ID` は既存の `FIREBASE_PROJECT_ID` を流用）。
+- **解消済み**: ランナー既定のJDKが21未満で Firestore Emulator が起動できなかった → `actions/setup-java@v4`（temurin 21）を追加。
+- **現状（2026-09-21 時点・コミット `45f6d77`）**: `build-and-test` ジョブは **success**（lint / typecheck / Emulator込みテスト114+48 / build すべて通過）。`deploy` ジョブは **GitHub Secrets 未登録のため failure**（`firebase deploy --project "" --token ""` → 認証エラー）。**デプロイ自体が実行されていないため本番への影響は無い**。
+- **⚠ 要対応（デプロイを有効にする場合）**: 以下の Secrets 登録が必要。
+  - 認証: `FIREBASE_PROJECT_ID` / `FIREBASE_TOKEN`（※ `firebase login:ci` のトークン方式は新しい firebase-tools で非推奨。サービスアカウント方式への変更も検討）
+  - バンドル埋め込み: `VITE_FIREBASE_API_KEY` / `VITE_FIREBASE_AUTH_DOMAIN` / `VITE_FIREBASE_STORAGE_BUCKET` / `VITE_FIREBASE_MESSAGING_SENDER_ID` / `VITE_FIREBASE_APP_ID`（`VITE_FIREBASE_PROJECT_ID` は `FIREBASE_PROJECT_ID` を流用する設定）
+  - これらが未登録のままだと、仮に認証だけ通してもFirebase設定が空のバンドルが公開される。
 
 ## 次回セッションの再開ポイント
 - **再開アクション**: Build and Test ステージ（全8ユニット完了後の最終ステージ）を実行
