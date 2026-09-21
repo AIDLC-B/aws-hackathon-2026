@@ -134,6 +134,11 @@
 - **料理登録画面の作り直し**: キャラ案内を `CharacterHint`（立ち絵＋固定セリフの吹き出し）に置換。写真エリアを訴求型ドロップゾーン化。頻度/難易度/所要時間の `<select>` を `ChipGroup`（1タップ選択チップ・新規UI Element）へ置換（所要時間はプリセット6種＋直接入力）。送信ボタンを sticky 化。
 - **吹き出しの自動格納を既定オフ**: 「たまにセリフが無い」状態の原因が8秒自動格納だったため、`CharacterMascot` の `autoCollapseMs` 既定を **0（自動格納しない）** に変更。立ち絵タップで手動格納/再表示。
 
+## CI/CD の状態（2026-09-21）
+- **解消済み**: `.gitignore` の `lib/` パターンがソースにも一致し、`apps/web/src/shared/lib/**`（3ファイル）と `apps/functions/src/lib/**`（12ファイル）が未コミットだった。ルートを `apps/functions/lib/`、Functions側を `/lib/` に限定して解消（これが従来のCI失敗の根本原因）。
+- **解消済み**: `.env` がリポジトリに無いため CI のテストで Firebase SDK 初期化が失敗していた → ワークフローのテストステップにダミーの `VITE_FIREBASE_*` を付与。
+- **⚠ 要対応**: Build ステップに `VITE_FIREBASE_*` の GitHub Secrets 参照を追加したが、**Secrets 自体が未登録**。このままデプロイされるとバンドルの Firebase 設定が空になり、本番アプリは動作しない。必要な Secrets: `VITE_FIREBASE_API_KEY` / `VITE_FIREBASE_AUTH_DOMAIN` / `VITE_FIREBASE_STORAGE_BUCKET` / `VITE_FIREBASE_MESSAGING_SENDER_ID` / `VITE_FIREBASE_APP_ID`（`VITE_FIREBASE_PROJECT_ID` は既存の `FIREBASE_PROJECT_ID` を流用）。
+
 ## 次回セッションの再開ポイント
 - **再開アクション**: Build and Test ステージ（全8ユニット完了後の最終ステージ）を実行
 - **参照ファイル**: `aidlc-docs/construction/unit8-ai-character/code/code-summary.md`（Unit 8生成内容・申し送り）, `apps/web/src/features/character`, `apps/web/src/features/settings`, `firestore.rules`（Unit 8でサブコレクション補完済み・エミュレータでのRules検証はBuild & Testで実施）
