@@ -1240,3 +1240,9 @@
 **User Input**: （前コミットのpush後、CI/Deploy が build-and-test で failure）
 **AI Response**: CIログを確認し `Cannot find module '@/shared/lib/firebase'` 等のTS2307を検出。原因は **`.gitignore` の `lib/` パターンがソースディレクトリにも一致**していたこと。ルート `.gitignore` の `lib/`（Functionsのビルド出力を意図）が `apps/web/src/shared/lib/` に、`apps/functions/.gitignore` の `lib/` が `apps/functions/src/lib/` にもマッチし、**ソース15ファイルが一度もコミットされていなかった**（これが 2026-07-26 のCI失敗の原因でもある）。修正: ルートは `apps/functions/lib/`、Functions側は `/lib/`（リポジトリルート起点）へ限定し、ビルド出力のみを無視するようにして15ファイル（`apps/web/src/shared/lib/{firebase,functions,storage}.ts` と `apps/functions/src/lib/**` 12ファイル）を追加。ハードコードされた秘匿情報が無いことをスキャンで確認。さらに `git checkout-index` でコミット対象のみを別ディレクトリへ展開し `npm ci` からCIと同じ手順を再現したところ、`.env` がリポジトリに無いためテストで Firebase SDK 初期化が `auth/invalid-api-key` で失敗することが判明。ワークフローのテストステップにダミーの `VITE_FIREBASE_*` を与え、Buildステップには GitHub Secrets 参照の env を追加（YAMLアンカーは GitHub Actions が解決しないため両ジョブに重複記述）。**要対応**: `VITE_FIREBASE_*` の Secrets が未登録のため、デプロイされるバンドルの Firebase 設定は空のままであり本番アプリは動作しない見込み。検証（クリーン展開ツリー）: npm ci → lint 0件 / typecheck 成功 / test web 114 pass + functions 48 pass / build 成功。
 **Context**: CONSTRUCTION - CI失敗の解消（既存の .gitignore 不備）
+
+## CI: Firestore Emulator 用の JDK 21 をランナーに追加
+**Timestamp**: 2026-09-21T11:15:00Z
+**User Input**: （2回目のCIも build-and-test で failure）
+**AI Response**: lint / typecheck は通過し、Emulator テストステップで `firebase-tools no longer supports Java version before 21` により失敗。GitHub ランナー既定のJDKが21未満のため。ローカル環境構築時（2026-07-26）と同じ制約で、ワークフロー側だけ未対応だった。`actions/setup-java@v4`（temurin 21）を Firebase CLI インストール直後に追加。
+**Context**: CONSTRUCTION - CI失敗の解消（Emulator実行環境）

@@ -29,6 +29,13 @@ jobs:
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
+      # Firestore Emulator は JVM 上で動く。firebase-tools は JDK 21 未満を拒否するため、
+      # ランナー既定のJDKではなく 21 を明示的に用意する
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
       # .env はリポジトリに含めないため、テストでは Firebase SDK の初期化が
       # 通るだけのダミー値を渡す（Emulator接続のみで実プロジェクトへは接続しない）
       - name: Unit tests + Rules tests (Emulator)
