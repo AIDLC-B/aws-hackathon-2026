@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button, Card, LoadingSpinner } from "@/shared/components/ui";
 import { useRecipes } from "@/features/recipe/hooks/useRecipes";
+import { CharacterMascot } from "@/features/character/components/CharacterMascot";
 
 /** ガチャ誘導の閾値（レパートリーがこの件数未満なら誘導・US-06） */
 const GACHA_REDIRECT_THRESHOLD = 10;
@@ -47,6 +48,9 @@ export function SelectionPage() {
           🎲 運に任せる（ガチャ）
         </Button>
       </div>
+
+      {/* 常駐マスコット（ホーム・献立未確定時） */}
+      <CharacterMascot trigger="meal_suggested" from="suggestion" />
 
       {needsMoreRepertoire && (
         <Card

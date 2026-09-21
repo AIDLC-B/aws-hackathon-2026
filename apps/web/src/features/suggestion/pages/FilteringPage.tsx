@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Card, LoadingSpinner } from "@/shared/components/ui";
+import {
+  Button,
+  Card,
+  LoadingSpinner,
+  PageHeader,
+} from "@/shared/components/ui";
 import {
   DIFFICULTY_LABEL,
   DIFFICULTY_OPTIONS,
 } from "@/features/recipe/utils/labels";
-import { CharacterInline } from "@/features/character/components/CharacterInline";
+import { CharacterMascot } from "@/features/character/components/CharacterMascot";
 import { CharacterBottomSheet } from "@/features/character/components/CharacterBottomSheet";
 import {
   useSuggestion,
@@ -67,16 +72,7 @@ export function FilteringPage() {
       data-testid="filtering-page"
       style={{ padding: 16, paddingBottom: 80 }}
     >
-      <Button variant="ghost" onClick={() => navigate("/")}>
-        ← もどる
-      </Button>
-
-      <h1 style={{ fontSize: 20, margin: "8px 0 16px" }}>条件で選ぶ</h1>
-
-      {/* インライン一言（meal_suggested・フィルタ画面） */}
-      <div style={{ marginBottom: 16 }}>
-        <CharacterInline trigger="meal_suggested" from="filtering" />
-      </div>
+      <PageHeader title="条件で選ぶ" backTo="/" />
 
       <Card style={{ marginBottom: 16 }}>
         <label style={{ display: "block", fontSize: 14, marginBottom: 6 }}>
@@ -157,6 +153,9 @@ export function FilteringPage() {
           />
         </>
       )}
+
+      {/* 常駐マスコット（meal_suggested・フィルタ画面） */}
+      <CharacterMascot trigger="meal_suggested" from="filtering" bottomOffset={16} />
 
       {/* 確定時のキャラ一言（meal_decided）→ 閉じたらホームへ */}
       <CharacterBottomSheet

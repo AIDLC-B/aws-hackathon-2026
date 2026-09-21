@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Card } from "@/shared/components/ui";
+import { Button, Card, PageHeader } from "@/shared/components/ui";
 import {
   CHARACTER_ORDER,
   CHARACTER_PROFILES,
@@ -43,24 +43,7 @@ export function CharacterSelectPage() {
       data-testid="character-select-page"
       style={{ padding: 16, display: "grid", gap: 12 }}
     >
-      <button
-        type="button"
-        data-testid="character-select-back-button"
-        onClick={() => navigate("/settings")}
-        style={{
-          justifySelf: "start",
-          background: "transparent",
-          border: "none",
-          color: "#ff7043",
-          fontSize: 15,
-          cursor: "pointer",
-          padding: 0,
-        }}
-      >
-        ← 設定へ戻る
-      </button>
-
-      <h1 style={{ margin: 0, fontSize: 20 }}>推しキャラを選ぶ</h1>
+      <PageHeader title="推しキャラを選ぶ" backTo="/settings" backLabel="設定" />
       <p style={{ margin: 0, fontSize: 13, color: "#666", lineHeight: 1.7 }}>
         選んだキャラだけが語りかけてくれます（複数選択できます）。
         <br />

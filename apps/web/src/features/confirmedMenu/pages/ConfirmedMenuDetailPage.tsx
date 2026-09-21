@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Button, LoadingSpinner } from "@/shared/components/ui";
+import { Button, LoadingSpinner, PageHeader } from "@/shared/components/ui";
 import {
   FREQUENCY_LABEL,
   DIFFICULTY_LABEL,
@@ -58,9 +58,7 @@ export function ConfirmedMenuDetailPage() {
       data-testid="confirmed-menu-detail-page"
       style={{ padding: 16, paddingBottom: 32 }}
     >
-      <Button variant="ghost" onClick={() => navigate("/")}>
-        ← ホーム
-      </Button>
+      <PageHeader title={item.name} backTo="/" backLabel="ホーム" />
 
       {item.imageUrl && (
         <img
@@ -76,7 +74,6 @@ export function ConfirmedMenuDetailPage() {
         />
       )}
 
-      <h1 style={{ fontSize: 22, margin: "8px 0" }}>{item.name}</h1>
       <p style={{ color: "#666", margin: "0 0 16px" }}>
         {FREQUENCY_LABEL[item.rarity]}｜{DIFFICULTY_LABEL[item.difficulty]}｜
         {item.duration}分

@@ -4,7 +4,7 @@
 - **Project Name**: DAMESI（ダメシ）
 - **Project Type**: Greenfield
 - **Start Date**: 2026-05-03T00:00:00Z
-- **Last Updated**: 2026-07-26T02:00:00Z
+- **Last Updated**: 2026-09-21T10:00:00Z
 - **Current Stage**: CONSTRUCTION PHASE - 全8ユニット完了 → Build and Test 着手前
 
 ## リポジトリ構成（2026-06-27 monorepo化）
@@ -120,7 +120,21 @@
 - **詳細手順・トラブルシューティング**: `apps/seed/SETUP.md` セクション8に記載
 - **本番切り戻し**: `.env` を実プロジェクト値へ / `VITE_USE_EMULATOR=false` / `LLM_PROVIDER=anthropic`
 
+## UI改善（2026-09-21・Build and Test 着手前）
+- **戻る導線**: `shared/components/ui/PageHeader`（戻る＋タイトル）を新設し、ボトムナビを持たない7画面（料理登録/レシピ詳細/レシピ編集/確定献立詳細/条件で選ぶ/ガチャ/推しキャラ選択）へ適用。**料理登録画面（`/recipe/new`）には戻る導線が存在しなかった**ため新規追加。
+- **キャラ表示**: `CharacterInline`（48pxアイコン＋横帯）を廃止 → `CharacterMascot`（画面隅に浮かぶ立ち絵140px＋尻尾付き吹き出し）。ホーム（SelectionPage）とフィルタリング画面に配置。`CharacterBottomSheet` も立ち絵160px＋吹き出し表示へ刷新。
+  - **被り対策**: 「重ならないレイアウト」ではなく「ユーザーがどかせる」方針を採用（ドック型は一度実装したが、可愛さを優先して取りやめ）。
+    - **ドラッグ移動**: 立ち絵をつかんで任意位置へ。移動量5px未満はタップ扱い。座標は `sessionStorage: damesi.mascot.position` に保存。
+    - **✕ で一時非表示**: そのキャラの円形アイコン（52px・💬バッジ付き）だけ残り、押せば復帰。`sessionStorage: damesi.mascot.hidden` に保存。小さな円で顔を見せるため `CharacterAvatar` に `crop="face"` を追加。
+    - **立ち絵タップ**で吹き出しだけ格納/再表示。
+- **表情バリエーション**: `characterImages.pickRandomVariant()` を追加し、台詞1件につき一度だけランダム選択（表示中は固定）。
+- **型**: `CharacterInlineProps` → `CharacterMascotProps`（`side` / `bottomOffset` / `size` / `autoCollapseMs`）。
+- **Emulator UI ポート**: 別プロセスが4000を使用していたため `firebase.json` の `emulators.ui.port` を **4001** に変更。
+- **アプリシェル**: `src/styles/global.css` を新設し、アプリ全体を `.damesi-shell`（最大720px・中央寄せ・幅は `--damesi-shell-width` で変更可）に収めた。PCブラウザで要素が横幅いっぱいに伸びる問題への対応。`position: fixed` のボトムナビ・キャラマスコットは `.damesi-fixed-center` で同じ幅に揃える。
+- **料理登録画面の作り直し**: キャラ案内を `CharacterHint`（立ち絵＋固定セリフの吹き出し）に置換。写真エリアを訴求型ドロップゾーン化。頻度/難易度/所要時間の `<select>` を `ChipGroup`（1タップ選択チップ・新規UI Element）へ置換（所要時間はプリセット6種＋直接入力）。送信ボタンを sticky 化。
+- **吹き出しの自動格納を既定オフ**: 「たまにセリフが無い」状態の原因が8秒自動格納だったため、`CharacterMascot` の `autoCollapseMs` 既定を **0（自動格納しない）** に変更。立ち絵タップで手動格納/再表示。
+
 ## 次回セッションの再開ポイント
 - **再開アクション**: Build and Test ステージ（全8ユニット完了後の最終ステージ）を実行
 - **参照ファイル**: `aidlc-docs/construction/unit8-ai-character/code/code-summary.md`（Unit 8生成内容・申し送り）, `apps/web/src/features/character`, `apps/web/src/features/settings`, `firestore.rules`（Unit 8でサブコレクション補完済み・エミュレータでのRules検証はBuild & Testで実施）
-- **Build & Test での既知課題**: `apps/web/tests/rules/firestore.rules.test.ts` はエミュレータ前提で未実行。`shared/hooks/useCollection.ts:72` のlint指摘（`react-hooks/exhaustive-deps` ルール未定義）も未解消。キャラクター画像（計約7MB）のWebP最適化は任意改善
+- **Build & Test での既知課題**: ~~`apps/web/tests/rules/firestore.rules.test.ts` はエミュレータ前提で未実行~~ → 2026-09-21 解消（`rulesPath()` で cwd 非依存に。Emulator下で7件pass）。~~`shared/hooks/useCollection.ts:72` のlint指摘~~ → 2026-09-21 解消（`eslint-plugin-react-hooks` を導入し `eslint.config.js` にルール設定）。キャラクター画像（計約7MB）のWebP最適化は任意改善。バンドルが743kB（gzip 198kB）で Vite のチャンクサイズ警告が出ている点も任意改善。

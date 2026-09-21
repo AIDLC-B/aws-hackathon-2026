@@ -3,7 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useRecipe } from "@/features/recipe/hooks/useRecipe";
 import { useRecipes } from "@/features/recipe/hooks/useRecipes";
 import { RecipeForm } from "@/features/recipe/components/RecipeForm";
-import { Modal, Button, LoadingSpinner } from "@/shared/components/ui";
+import {
+  Modal,
+  Button,
+  LoadingSpinner,
+  PageHeader,
+} from "@/shared/components/ui";
 import {
   emptyRecipeForm,
   validateRecipeForm,
@@ -86,7 +91,7 @@ export function RecipeEditPage() {
 
   return (
     <main data-testid="recipe-edit-page" style={{ padding: 16, paddingBottom: 32 }}>
-      <h1 style={{ fontSize: 20, margin: "0 0 16px" }}>レシピを編集する</h1>
+      <PageHeader title="レシピを編集する" backTo={`/recipe/${id}`} backLabel="詳細" />
 
       <RecipeForm
         values={values}

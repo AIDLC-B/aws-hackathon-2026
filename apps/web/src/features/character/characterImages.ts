@@ -80,3 +80,16 @@ export function getCharacterImage(id: CharacterId, variant = 0): string | null {
   const index = ((variant % images.length) + images.length) % images.length;
   return images[index];
 }
+
+/**
+ * 指定キャラの画像バリエーション番号をランダムに1つ選ぶ。
+ *
+ * 同じ台詞でも表示のたびに表情・ポーズが変わり「生きている感」を出すための選択。
+ * 表示中に絵が差し替わらないよう、呼び出し側は台詞1件につき一度だけ評価する
+ * （`useMemo` のキーに台詞を含める）。画像が無いキャラは 0 を返す。
+ */
+export function pickRandomVariant(id: CharacterId): number {
+  const images = CHARACTER_IMAGES[id];
+  if (!images || images.length === 0) return 0;
+  return Math.floor(Math.random() * images.length);
+}

@@ -16,10 +16,9 @@ export function AppLayout() {
     <div style={{ minHeight: "100vh", paddingBottom: 64 }}>
       <Outlet />
       <nav
+        className="damesi-fixed-center"
         style={{
           position: "fixed",
-          left: 0,
-          right: 0,
           bottom: 0,
           height: 60,
           display: "flex",

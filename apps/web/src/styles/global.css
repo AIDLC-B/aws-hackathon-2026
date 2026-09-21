@@ -1,0 +1,55 @@
+/**
+ * グローバルスタイル。
+ *
+ * DAMESI はモバイル前提のUIだが、PCブラウザでは横幅いっぱいに要素が伸びて
+ * 間延びしてしまうため、アプリ全体を1枚の「シェル」（最大720px・中央寄せ）に収める。
+ * 720px はPCのプロジェクター投影でも読みやすい幅としてユーザーが選択した値。
+ * `position: fixed` の要素（ボトムナビ・キャラマスコット）はビューポート基準になるため、
+ * `.damesi-fixed-center` で同じ幅に揃える。
+ */
+
+:root {
+  --damesi-shell-width: 720px;
+  --damesi-accent: #ff7043;
+  --damesi-bg: #f4efec;
+  --damesi-surface: #fff;
+  --damesi-text: #333;
+  --damesi-muted: #888;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--damesi-bg);
+  color: var(--damesi-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP",
+    "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/** アプリ本体（最大720px・中央寄せ・紙のような面） */
+.damesi-shell {
+  position: relative;
+  width: 100%;
+  max-width: var(--damesi-shell-width);
+  min-height: 100vh;
+  margin: 0 auto;
+  background: var(--damesi-surface);
+  box-shadow: 0 0 32px rgba(0, 0, 0, 0.08);
+}
+
+/** fixed 要素をシェル幅に合わせて中央寄せする */
+.damesi-fixed-center {
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: var(--damesi-shell-width);
+}

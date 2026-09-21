@@ -77,10 +77,17 @@ export interface CharacterBottomSheetProps {
 }
 
 /**
- * CharacterInline の props（インライン表示）。
- * meal_suggested（フィルタリング画面）に使用。
+ * CharacterMascot の props（画面隅に浮かぶ常駐マスコット）。
+ * 画面内に留まり続ける一言（meal_suggested / home など）に使用。
+ * 旧 CharacterInline（画面内の横帯）を置き換えたもの。
  */
-export interface CharacterInlineProps {
+export interface CharacterMascotProps {
   trigger: Trigger;
   from: From;
+  /** 既定位置の画面下端からのオフセットpx（ボトムナビ有りは72・無しは16程度・既定: 72） */
+  bottomOffset?: number;
+  /** 立ち絵の高さpx（既定: 140） */
+  size?: number;
+  /** 吹き出しを自動で格納するまでのms（既定: 0 = 自動格納しない） */
+  autoCollapseMs?: number;
 }

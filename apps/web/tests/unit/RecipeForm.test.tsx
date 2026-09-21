@@ -21,7 +21,7 @@ describe("RecipeForm（プレゼンテーショナル）", () => {
     expect(screen.getByText("所要時間は必須です")).toBeInTheDocument();
   });
 
-  it("頻度セレクトに頻度表記が並ぶ", () => {
+  it("頻度チップに頻度表記が並ぶ", () => {
     render(
       <RecipeForm
         values={emptyRecipeForm}
@@ -31,8 +31,42 @@ describe("RecipeForm（プレゼンテーショナル）", () => {
         submitLabel="登録する"
       />,
     );
-    expect(screen.getByText("よく作る")).toBeInTheDocument();
-    expect(screen.getByText("まれに作る")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /よく作る/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /まれに作る/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("難易度チップのタップで onChange が呼ばれる", () => {
+    const onChange = vi.fn();
+    render(
+      <RecipeForm
+        values={emptyRecipeForm}
+        errors={{}}
+        onChange={onChange}
+        onSubmit={() => {}}
+        submitLabel="登録する"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /かんたん/ }));
+    expect(onChange).toHaveBeenCalledWith({ difficulty: "easy" });
+  });
+
+  it("所要時間プリセットのタップで onChange が呼ばれる", () => {
+    const onChange = vi.fn();
+    render(
+      <RecipeForm
+        values={emptyRecipeForm}
+        errors={{}}
+        onChange={onChange}
+        onSubmit={() => {}}
+        submitLabel="登録する"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "30分" }));
+    expect(onChange).toHaveBeenCalledWith({ duration: 30 });
   });
 
   it("送信ボタンで onSubmit が呼ばれる", () => {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Modal } from "@/shared/components/ui";
+import { Button, Modal, PageHeader } from "@/shared/components/ui";
 import { CharacterBottomSheet } from "@/features/character/components/CharacterBottomSheet";
 import { useConfirmedMenu } from "@/features/confirmedMenu/hooks/useConfirmedMenu";
 import { useGacha, type ConfirmMode } from "@/features/gacha/hooks/useGacha";
@@ -83,11 +83,7 @@ export function GachaPage() {
 
   return (
     <main data-testid="gacha-page" style={{ padding: 16, paddingBottom: 80 }}>
-      <Button variant="ghost" onClick={() => navigate("/")}>
-        ← もどる
-      </Button>
-
-      <h1 style={{ fontSize: 20, margin: "8px 0 16px" }}>献立ガチャ</h1>
+      <PageHeader title="献立ガチャ" backTo="/" />
 
       {phase === "idle" && (
         <div

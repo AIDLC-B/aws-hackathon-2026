@@ -1186,3 +1186,51 @@
 **User Input**: "一旦、コミット、pushをお願い。諸々更新してね" → "ごめん。コミットpushしておきました。諸々のstate更新して"
 **AI Response**: ユーザーがコミット `8c0d15f`「基本機能作成」をmainへpush済みであることを確認（作業ツリーはクリーン）。これをもってUnit 8 Code Generationを承認として記録。aidlc-state.md を更新（Unit 8をCOMPLETED & APPROVED・Current Stageを「全8ユニット完了 → Build and Test 着手前」・ローカル開発環境セクションを追記・再開ポイントをBuild and Testへ変更）。`apps/seed/SETUP.md` にセクション8「ローカル（Emulator）で動かす手順と注意点」を追記（JDK21要件・起動順・ローカル用.env設定表・よくあるエラー4件と対処・データ永続化・本番切り戻し手順）。
 **Context**: CONSTRUCTION - Unit 8 完了・承認 → Build and Test 着手前
+
+## ローカル起動（Emulator一式）→ UI改善: 戻る導線の共通化とキャラ表示のマスコット化
+**Timestamp**: 2026-09-21T10:00:00Z
+**User Input**: "ai-dlcに従って作業をしていこう。まずはだけんできるように、全部起動して欲しい" → "これ、料理の登録から戻る画面がないね。戻れる導線を作ろう。あと、キャラとかこんな感じででているけど、なんかイマイチだね。画像がでてきて、そこに吹き出しがあってしゃべっているかんじにできない？画面上部とかじゃなくていいので、楽しく見えるように出して欲しい。オーバーレイとかでもいいので、いい案を提示してください"（スクリーンショット: フィルタリング画面のCharacterInline横帯）
+**AI Response**: SETUP.md セクション8の手順でローカル一式を起動（build:functions → emulators:start → seed → dev）。Emulator UI の既定ポート4000が別プロセスに占有されていたため `firebase.json` の `emulators.ui.port` を4001へ変更。演出案3種（常駐マスコット / ノベルゲーム風フルスクリーン / ハイブリッド）と表情バリエーションの使い方3種を提示し、ユーザー選択は「常駐マスコット＋吹き出し」「表情はランダム」。実装: (1) `shared/components/ui/PageHeader`（戻る＋タイトルの共通ヘッダー）を新設し、料理登録（戻る導線が無かった＝本件の主課題）・レシピ詳細・レシピ編集・確定献立詳細・条件で選ぶ・ガチャ・推しキャラ選択の7画面へ適用してページ毎の手書き実装を統一。(2) `CharacterInline`（48pxアイコン＋横帯）を廃止し `CharacterMascot`（画面隅の立ち絵140px＋尻尾付き吹き出し・position:fixedオーバーレイ・bounce-in/pop-in演出・8秒で吹き出し格納＋立ち絵タップで再表示・pointerEvents:noneで操作を阻害しない）を新設。フィルタリング画面とホーム（SelectionPage）に配置。(3) `CharacterBottomSheet` も立ち絵160px＋尻尾付き吹き出しへ刷新。(4) `characterImages.pickRandomVariant()` を追加し、台詞1件につき一度だけ表情をランダム選択（`useMemo`で表示中の差し替わりを防止）。型は `CharacterInlineProps` → `CharacterMascotProps`（side/bottomOffset/size/autoCollapseMs）へ置換。検証: typecheck（web+functions）成功、vitest unit 23ファイル103 pass（CharacterInline.test → CharacterMascot.test へ置換・タップ開閉のテスト1件追加）、lint は既存の `useCollection.ts:72` 1件のみ（本変更由来なし）、Emulator上のブラウザで実表示を確認。
+**Context**: CONSTRUCTION - Build and Test 着手前の UI 改善（Unit 5/6/8 の表示層）
+
+## UI改善（続き）: アプリシェル導入・料理登録画面の作り直し・吹き出し常時表示
+**Timestamp**: 2026-09-21T10:10:00Z
+**User Input**: "料理登録の画面、イマイチじゃない？"（PCブラウザのスクリーンショット: 全要素が横幅いっぱいに伸び、キャラ案内がハードコードの帯、写真エリアが巨大な空箱） → "あとたまにセリフがない時がある"（立ち絵だけで吹き出しが無いスクリーンショット）
+**AI Response**: (1) **アプリシェル**: `src/styles/global.css` を新設（reset・CSS変数・`.damesi-shell`[最大480px中央寄せ]・`.damesi-fixed-center`）。`main.tsx` で読み込み、`App.tsx` で全体を包む。`position: fixed` のボトムナビとキャラマスコットも `.damesi-fixed-center` でシェル幅に揃え、PCでも破綻しないモバイルUIにした。(2) **料理登録画面**: キャラ案内のハードコード帯を `CharacterHint`（立ち絵＋尻尾付き吹き出し・固定セリフ用）に置換。写真エリアを「📷 写真から登録する / 撮るだけでAIが料理名を埋めてくれます」の訴求型ドロップゾーンへ（解析中・プレビュー時の表示も分岐）。頻度・難易度・所要時間の `<select>` を `ChipGroup`（1タップ選択チップ・新規UI Element）に置換し、所要時間はプリセット6種＋直接入力。ラベルを「どれくらい作る？/大変？/時間がかかる？」に平易化、料理名にプレースホルダ追加、送信ボタンを sticky 化。(3) **「たまにセリフがない」の原因**: `CharacterMascot` の8秒自動格納で立ち絵だけが残る状態だった。既定を `autoCollapseMs = 0`（自動格納しない）に変更し、吹き出しは出しっぱなし・立ち絵タップで手動格納/再表示とした。検証: typecheck成功、vitest unit 23ファイル105 pass（RecipeFormのチップ選択テスト2件追加・頻度テストをrole基準に修正）、lintは既存 `useCollection.ts:72` の1件のみ、ブラウザでホーム/登録/ガチャ/レパートリーの表示を確認。
+**Context**: CONSTRUCTION - Build and Test 着手前の UI 改善（第2弾）
+
+## アプリシェル幅の調整（480px → 720px）
+**Timestamp**: 2026-09-21T10:20:00Z
+**User Input**: "なんか横幅がもばいるっぽくなったけど、なんで？" → 選択肢提示に対し「もう少し広げる（600〜720px）」を選択
+**AI Response**: シェル導入はAI側の判断で入れた変更であることを説明（PCで要素が横幅いっぱいに伸びて間延びしていたため・スマホ幅では挙動不変）。幅の扱いを確認し、`--damesi-shell-width` を **720px** へ変更。PCのプロジェクター投影でも読みやすい幅とする。
+**Context**: CONSTRUCTION - UI改善（シェル幅の調整）
+
+## キャラクター表示をドック型へ変更（コンテンツとの被り解消）
+**Timestamp**: 2026-09-21T10:30:00Z
+**User Input**: "いかのように、キャラクターと画面がかぶっていて視認性低下や、押下しにくいなどのかだいがあるね"（提案結果リストの上に立ち絵と吹き出しが重なり、行のラベルが読めない・タップを奪うスクリーンショット） → 選択肢提示に対し「下部ドック型」を選択
+**AI Response**: 原因は `CharacterMascot` を画面隅の浮遊オーバーレイにしていたこと（立ち絵・吹き出しが `pointerEvents: auto` でカードの上に乗り、リストが伸びる画面では常に重なる）。ドック型へ作り直し: 画面下部にキャラクター専用レーンを固定（立ち絵96px + 尻尾付き吹き出しの横並び・ボトムナビの上）、ドックが自身の実高さを CSS変数 `--damesi-dock-space` に書き込み（`useLayoutEffect` + `ResizeObserver` で折りたたみ・台詞行数の変化に追従）、`.damesi-shell` が同じ高さの `padding-bottom` を確保する構成にした（`styles/global.css`）。これによりスクロール位置に関わらずコンテンツと物理的に重ならない。ドックタップで細いバー（円形アバター32px + 名前 + 「タップでひとこと」）へ折りたたみ、余白も連動して縮む。型から `side` を削除し `bottomOffset` 既定を60（ボトムナビ高さ）・`size` 既定を96へ変更。フィルタリング画面はナビ無しのため `bottomOffset={0}`。テスト: jsdom に ResizeObserver が無いため `tests/setup.ts` にスタブを追加、折りたたみテストは要素が差し替わるため都度取得する形に修正。検証: typecheck成功、vitest unit 23ファイル105 pass、lintは既存 `useCollection.ts:72` の1件のみ、ブラウザでホーム・提案結果リストのスクロール時に被りが無いことを確認。
+**Context**: CONSTRUCTION - UI改善（キャラクター表示の被り解消）
+
+## キャラクター表示を浮遊マスコットへ戻し、移動・一時非表示を追加
+**Timestamp**: 2026-09-21T10:40:00Z
+**User Input**: "ごめん。やっぱりひょうじはさっきの方が可愛くてよかった。キャラクター移動できるようにするか、一時的な非表示とかできない？目を閉じるボタンとかつけておいて。バツボタンでも可能"
+**AI Response**: ドック型を取りやめ、画面隅に浮かぶ立ち絵140px＋尻尾付き吹き出し（ドック化前の見た目）へ戻したうえで、被り対策を「ユーザーが自分でどかせる」方向に変更。(1) **ドラッグ移動**: 立ち絵を Pointer Events でつかんで任意の位置へ。移動量5px未満はタップ扱いとして吹き出しの開閉に振り分ける。座標は画面外へ出ないようクランプし `sessionStorage`（`damesi.mascot.position`）へ保存、画面遷移をまたいで維持（タブを閉じるとリセット）。(2) **✕ で一時非表示**: 吹き出し右上の✕で消え、代わりに 💬 の丸ボタン（44px）が残り押せば復帰。状態は `sessionStorage`（`damesi.mascot.hidden`）に保存。`sessionStorage` はprivateモード等で例外を投げうるため読み書きを try/catch で保護。(3) ドック用に入れていた `.damesi-shell` の `padding-bottom: var(--damesi-dock-space)` と高さ申告（ResizeObserver）は撤去。`setPointerCapture` はjsdom未実装のため存在チェック付きで呼ぶ。検証: typecheck成功、vitest unit 23ファイル106 pass（✕→💬の復帰テストを追加・タップ判定テストをPointerEvent基準に変更）、lintは既存 `useCollection.ts:72` の1件のみ、ブラウザで非表示/復帰とドラッグ移動＋座標保存を実測確認。
+**Context**: CONSTRUCTION - UI改善（キャラクター表示の最終形）
+
+## 非表示中の復帰ボタンをキャラクターアイコン化
+**Timestamp**: 2026-09-21T10:45:00Z
+**User Input**: "の吹き出しアイコンだけど、キャラクターっぽいアイコンにできる？"（✕で隠したあとに残る 💬 の丸ボタンのスクリーンショット）
+**AI Response**: 復帰ボタンの中身を絵文字から**そのキャラの円形アイコン**（52px・テーマカラーの枠線）へ変更し、右下に小さな 💬 バッジを重ねた（「誰が待っているか」と「押すと喋る」を同時に示す）。立ち絵は全身画像のため小さな円では顔が潰れる問題があり、`CharacterAvatar` に `crop?: "fit" | "face"` を追加（`face` は `objectFit: cover` + `objectPosition: 50% 10%` で上部に寄せて切り抜く。既定の `fit` は従来どおり全体を収める）。表情バリエーションは表示中のマスコットと同じものを使う。検証: typecheck成功、vitest unit 23ファイル106 pass、lintは既存 `useCollection.ts:72` の1件のみ、ブラウザで非表示時のアイコン表示を確認。
+**Context**: CONSTRUCTION - UI改善（キャラクター復帰ボタンの見た目）
+
+## 不具合修正: 操作のたびにキャラクターが入れ替わる
+**Timestamp**: 2026-09-21T10:50:00Z
+**User Input**: "あとクリックするとキャラクターがかわってくれるんだけど、押下時とリリース時の2回になっている。なおして"
+**AI Response**: 原因は `useCharacterDialogue().getDialogue()` が**ランダム抽選**でありながらレンダー本体で毎回呼ばれていたこと。立ち絵の押下は `setDragging(true)`、離した時は `setDragging(false)` + `setExpanded(...)` と2回の再レンダーを起こすため、台詞とキャラが2回引き直されていた（ドラッグ移動中は毎フレーム入れ替わる状態でもあった）。`CharacterMascot` と `CharacterBottomSheet` の双方で抽選結果を `useMemo` 化し、`trigger` / `from` / `open` / マスターの読み込み完了（`loading`）が変わったときだけ引き直すようにした（`getDialogue` は毎レンダー新しい関数になるため依存に含めない）。回帰テストを追加（`Math.random` が呼び出しごとに異なる値を返す状況で吹き出しの開閉を4往復し、キャラクターが変わらないことを検証）。修正前のコードでは同テストが失敗することを確認済み。検証: typecheck成功、vitest unit 23ファイル107 pass、lintは既存 `useCollection.ts:72` の1件のみ。
+**Context**: CONSTRUCTION - UI改善（キャラクター抽選の安定化）
+
+## CI を通す修正（lint設定・Rulesテストのパス）→ コミット/push
+**Timestamp**: 2026-09-21T10:55:00Z
+**User Input**: "OK.コミット、pushをお願い" → push先の確認に対し「main に直接」「lintエラーは今回一緒に直す」を選択
+**AI Response**: mainへのpushがCI/Deployを起動すること、現状 lint と Rulesテストで CI が落ちる見込みであることを先に報告し、両方を修正。(1) **lint**: `eslint-plugin-react-hooks` が未導入で `react-hooks/exhaustive-deps` ルールが解決できず、`eslint-disable` コメント自体がエラーになっていた（Unit 8 からの既知課題）。プラグインを devDependency に追加し `eslint.config.js` に `rules-of-hooks: error` / `exhaustive-deps: warn` を設定。有効化で出た4件の警告は、いずれも意図的な依存配列（`getDialogue` を含めると毎レンダー再抽選になる／`message` は表情の引き直しに必要）のため理由コメント付きで disable。lint は 0 problems に。(2) **Rulesテスト**: `readFileSync("firestore.rules")` が vitest の cwd（apps/web）基準でリポジトリ直下のファイルを解決できず未実行だった。`process.cwd()` からの相対で解決する `rulesPath()` を追加（リポジトリ直下から実行された場合もフォールバック）。Emulator接続下で7件すべてpass。検証: `npm run lint` 0件 / `npm run typecheck` 成功 / `npm run test` web 24ファイル114 pass + functions 5ファイル48 pass / `npm run build` 成功。これでCIの全ステップがローカル再現で通る状態。
+**Context**: CONSTRUCTION - UI改善一式のコミット/push（既知課題2件も解消）

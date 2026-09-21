@@ -12,6 +12,12 @@ interface CharacterAvatarProps {
   bordered?: boolean;
   /** 画像バリエーション番号（0始まり・枚数超過時は循環） */
   variant?: number;
+  /**
+   * circle のときの画像の収め方。
+   * - "fit"（既定）: 立ち絵全体を収める（全身が小さく写る）
+   * - "face": 上部に寄せて切り抜く。小さな円アイコンで顔を見せたいときに使う
+   */
+  crop?: "fit" | "face";
 }
 
 /**
@@ -27,10 +33,12 @@ export function CharacterAvatar({
   size = 56,
   bordered = false,
   variant = 0,
+  crop = "fit",
 }: CharacterAvatarProps) {
   const profile = getCharacterProfile(characterId);
   const image = getCharacterImage(characterId, variant);
   const isPortrait = shape === "portrait";
+  const cropFace = !isPortrait && crop === "face";
 
   return (
     <div
@@ -59,7 +67,8 @@ export function CharacterAvatar({
           style={{
             width: isPortrait ? "auto" : "100%",
             height: "100%",
-            objectFit: "contain",
+            objectFit: cropFace ? "cover" : "contain",
+            objectPosition: cropFace ? "50% 10%" : undefined,
           }}
         />
       ) : (

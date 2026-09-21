@@ -1,5 +1,6 @@
 import { describe, it, beforeAll, afterAll, beforeEach } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   initializeTestEnvironment,
   assertFails,
@@ -17,6 +18,18 @@ import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
 let testEnv: RulesTestEnvironment;
 
+/**
+ * firestore.rules の場所を解決する。
+ * vitest の cwd はワークスペース（apps/web）だが、ルールファイルはリポジトリ直下にある。
+ * リポジトリ直下から実行された場合にも備えて両方を見る。
+ */
+function rulesPath(): string {
+  const fromWorkspace = resolve(process.cwd(), "../../firestore.rules");
+  return existsSync(fromWorkspace)
+    ? fromWorkspace
+    : resolve(process.cwd(), "firestore.rules");
+}
+
 const OWNER = "user-owner";
 const OTHER = "user-other";
 
@@ -33,7 +46,7 @@ beforeAll(async () => {
   testEnv = await initializeTestEnvironment({
     projectId: "damesi-rules-test",
     firestore: {
-      rules: readFileSync("firestore.rules", "utf8"),
+      rules: readFileSync(rulesPath(), "utf8"),
       host: "localhost",
       port: 8080,
     },

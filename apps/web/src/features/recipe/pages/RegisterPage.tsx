@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { PageHeader } from "@/shared/components/ui";
 import { useRecipes } from "@/features/recipe/hooks/useRecipes";
 import { RecipeForm } from "@/features/recipe/components/RecipeForm";
 import { CharacterBottomSheet } from "@/features/character/components/CharacterBottomSheet";
+import { CharacterHint } from "@/features/character/components/CharacterHint";
 import {
   emptyRecipeForm,
   validateRecipeForm,
@@ -86,7 +88,7 @@ export function RegisterPage() {
 
   return (
     <main data-testid="recipe-register-page" style={{ padding: 16, paddingBottom: 32 }}>
-      <h1 style={{ fontSize: 20, margin: "0 0 16px" }}>料理を登録する</h1>
+      <PageHeader title="料理を登録する" backTo="/recipe" backLabel="レパートリー" />
 
       <RecipeForm
         values={values}
@@ -101,19 +103,10 @@ export function RegisterPage() {
         notice={notice}
         submitting={submitting}
         helper={
-          <div
-            style={{
-              background: "#fff5f0",
-              borderRadius: 10,
-              padding: 12,
-              fontSize: 14,
-              lineHeight: 1.6,
-            }}
-          >
-            <strong>サボ母ちゃん</strong>
-            <br />
-            「料理名と頻度だけ入れてくれたらええで！材料やレシピはあとでゆっくり入れたらええねん」
-          </div>
+          <CharacterHint
+            characterId="sabokachan"
+            message="料理名と頻度だけ入れてくれたらええで！材料やレシピはあとでゆっくり入れたらええねん"
+          />
         }
       />
 

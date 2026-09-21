@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useRecipe } from "@/features/recipe/hooks/useRecipe";
-import { Button, LoadingSpinner } from "@/shared/components/ui";
+import { Button, LoadingSpinner, PageHeader } from "@/shared/components/ui";
 import {
   FREQUENCY_LABEL,
   DIFFICULTY_LABEL,
@@ -31,9 +31,7 @@ export function RecipeDetailPage() {
 
   return (
     <main data-testid="recipe-detail-page" style={{ padding: 16, paddingBottom: 32 }}>
-      <Button variant="ghost" onClick={() => navigate("/recipe")}>
-        ← レパートリー
-      </Button>
+      <PageHeader title={recipe.name} backTo="/recipe" backLabel="レパートリー" />
 
       {recipe.imageUrl && (
         <img
@@ -49,7 +47,6 @@ export function RecipeDetailPage() {
         />
       )}
 
-      <h1 style={{ fontSize: 22, margin: "8px 0" }}>{recipe.name}</h1>
       <p style={{ color: "#666", margin: "0 0 16px" }}>
         {FREQUENCY_LABEL[recipe.rarity]}｜{DIFFICULTY_LABEL[recipe.difficulty]}｜
         {recipe.duration}分
