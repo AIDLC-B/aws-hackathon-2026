@@ -66,3 +66,4 @@ firestore.rules / storage.rules / firestore.indexes.json / firebase.json
 - [ ] Unit 6: 献立提案
 - [ ] Unit 7: 献立ガチャ
 - [ ] Unit 8: AIキャラクター
+
